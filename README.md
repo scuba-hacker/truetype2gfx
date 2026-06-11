@@ -33,3 +33,64 @@ If you are not content with running the version that's on my server because:
 2. In this directory, add a compiled version of the Adafruit `fontconvert` tool (see [here](https://github.com/adafruit/Adafruit-GFX-Library/tree/master/fontconvert)) and make sure it it executable to the user that runs your webserver. 
 
 3. Make sure the fonts/user directory is writable for the webserver user.
+
+### Running with Docker
+
+This repository includes a Docker setup with lighttpd and PHP enabled.
+It builds a Linux `fontconvert` binary from the local `fontconvert/` source directory,
+so you do not need a host `fontconvert` executable for container use. The binary is
+built for the architecture where the image is built, such as macOS Docker Desktop or
+a Raspberry Pi.
+
+Build and start the container:
+
+```sh
+mkdir -p /tmp/truetype2gfx
+docker compose up --build -d
+```
+
+On a Mac, open:
+
+```text
+http://localhost:8088/
+```
+
+On a Raspberry Pi, open the Pi address from another machine:
+
+```text
+http://raspberrypi.local:8088/
+```
+
+or replace `raspberrypi.local` with the Pi's IP address.
+
+Port `8088` is used so it does not conflict with an existing lighttpd on the host.
+Uploaded fonts, the last selected device, and preview settings are stored in
+`/tmp/truetype2gfx` on the host through a bind mount, so they survive container
+rebuilds.
+
+To stop the container:
+
+```sh
+docker compose down
+```
+
+If you want the Pi to serve this directly on port 80, change the port mapping in
+`docker-compose.yml` to:
+
+```yaml
+ports:
+  - "80:80"
+```
+
+### Preview controls
+
+The preview can target multiple devices, including M5Stack and M5Stick-CPlus. The
+M5Stick-CPlus can be displayed at comfortable size, large 100% size, or actual
+physical size with a display calibration preset.
+
+The demo text box supports multiple lines. Actual line breaks are rendered as line
+breaks, and typed `\n` sequences are also interpreted as line breaks.
+
+Preview options include foreground/background colours, text alignment, word wrap,
+rotation, pixelated glyph rendering, and pixel-locked output scaling. Custom uploaded fonts are listed from
+`/tmp/truetype2gfx` and can be deleted from the page.

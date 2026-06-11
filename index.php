@@ -4,6 +4,228 @@ session_start();
 
 if (isset($_GET['reset'])) unset($_SESSION['fonts']);
 
+$devices = array(
+	"m5stack" => array(
+		"name" => "M5Stack",
+		"image" => "M5Stack-bg.png",
+		"width" => 320,
+		"height" => 240,
+		"frame_width" => 425,
+		"frame_height" => 429,
+		"screen_left" => 50,
+		"screen_top" => 90,
+		"screen_width" => 320,
+		"screen_height" => 240
+	),
+	"m5stickcplus" => array(
+		"name" => "M5Stick-CPlus",
+		"image" => "M5StickC-Plus.png",
+		"width" => 135,
+		"height" => 240,
+		"frame_width" => 443,
+		"frame_height" => 892,
+		"screen_left" => 83,
+		"screen_top" => 65,
+		"screen_width" => 278,
+		"screen_height" => 460,
+		"physical_width_mm" => 24.0,
+		"physical_height_mm" => 48.0
+	)
+);
+
+$colors = array(
+	"black" => array("name" => "Black", "rgb" => array(0, 0, 0)),
+	"white" => array("name" => "White", "rgb" => array(255, 255, 255)),
+	"red" => array("name" => "Red", "rgb" => array(255, 0, 0)),
+	"green" => array("name" => "Green", "rgb" => array(0, 255, 0)),
+	"blue" => array("name" => "Blue", "rgb" => array(0, 0, 255)),
+	"cyan" => array("name" => "Cyan", "rgb" => array(0, 255, 255)),
+	"magenta" => array("name" => "Magenta", "rgb" => array(255, 0, 255)),
+	"yellow" => array("name" => "Yellow", "rgb" => array(255, 255, 0))
+);
+
+$vertical_positions = array(
+	"top" => "Top",
+	"centre" => "Centre",
+	"bottom" => "Bottom"
+);
+
+$horizontal_positions = array(
+	"left" => "Left",
+	"centre" => "Centre",
+	"right" => "Right"
+);
+
+$display_scales = array(
+	"standard" => array("name" => "Standard display", "scale" => 1.0),
+	"imac5k" => array("name" => "iMac 5K Retina", "scale" => 1.18)
+);
+
+$device_state_file = "fonts/user/.selected-device";
+$persisted_device = "";
+if (file_exists($device_state_file)) {
+	$persisted_device = trim(file_get_contents($device_state_file));
+}
+
+if (!isset($_SESSION['device']) || !isset($devices[$_SESSION['device']])) {
+	if (isset($devices[$persisted_device])) {
+		$_SESSION['device'] = $persisted_device;
+	} else {
+		$_SESSION['device'] = "m5stack";
+	}
+}
+
+if (isset($_POST["set-device"])) {
+	if (isset($_POST["device"]) && isset($devices[$_POST["device"]])) {
+		$_SESSION['device'] = $_POST["device"];
+		file_put_contents($device_state_file, $_POST["device"]);
+	}
+	exit();
+}
+
+$selected_device = $_SESSION['device'];
+
+$settings_state_file = "fonts/user/.preview-settings.json";
+$preview_settings = array("background" => "white", "foreground" => "black", "vertical" => "centre", "horizontal" => "centre", "size_mode" => "comfortable", "display_scale" => "standard", "word_wrap" => "off", "pixelate" => "off", "output_pixelate" => "off", "rotation" => "0");
+if (file_exists($settings_state_file)) {
+	$saved_settings = json_decode(file_get_contents($settings_state_file), true);
+	if (is_array($saved_settings)) {
+		if (isset($saved_settings["background"]) && isset($colors[$saved_settings["background"]])) $preview_settings["background"] = $saved_settings["background"];
+		if (isset($saved_settings["foreground"]) && isset($colors[$saved_settings["foreground"]])) $preview_settings["foreground"] = $saved_settings["foreground"];
+		if (isset($saved_settings["vertical"]) && isset($vertical_positions[$saved_settings["vertical"]])) $preview_settings["vertical"] = $saved_settings["vertical"];
+		if (isset($saved_settings["horizontal"]) && isset($horizontal_positions[$saved_settings["horizontal"]])) $preview_settings["horizontal"] = $saved_settings["horizontal"];
+		if (isset($saved_settings["size_mode"]) && in_array($saved_settings["size_mode"], array("comfortable", "large", "actual"))) $preview_settings["size_mode"] = $saved_settings["size_mode"];
+		if (isset($saved_settings["physical_size"]) && $saved_settings["physical_size"] == "on") $preview_settings["size_mode"] = "actual";
+		if (isset($saved_settings["display_scale"]) && isset($display_scales[$saved_settings["display_scale"]])) $preview_settings["display_scale"] = $saved_settings["display_scale"];
+		if (isset($saved_settings["word_wrap"]) && in_array($saved_settings["word_wrap"], array("off", "on"))) $preview_settings["word_wrap"] = $saved_settings["word_wrap"];
+		if (isset($saved_settings["pixelate"]) && in_array($saved_settings["pixelate"], array("off", "on"))) $preview_settings["pixelate"] = $saved_settings["pixelate"];
+		if (isset($saved_settings["output_pixelate"]) && in_array($saved_settings["output_pixelate"], array("off", "on"))) $preview_settings["output_pixelate"] = $saved_settings["output_pixelate"];
+		if (isset($saved_settings["rotation"]) && in_array($saved_settings["rotation"], array("0", "90", "180", "270"))) $preview_settings["rotation"] = $saved_settings["rotation"];
+	}
+}
+
+if (!isset($_SESSION["preview-settings"])) $_SESSION["preview-settings"] = $preview_settings;
+if (!isset($colors[$_SESSION["preview-settings"]["background"]])) $_SESSION["preview-settings"]["background"] = $preview_settings["background"];
+if (!isset($colors[$_SESSION["preview-settings"]["foreground"]])) $_SESSION["preview-settings"]["foreground"] = $preview_settings["foreground"];
+if (!isset($vertical_positions[$_SESSION["preview-settings"]["vertical"]])) $_SESSION["preview-settings"]["vertical"] = $preview_settings["vertical"];
+if (!isset($horizontal_positions[$_SESSION["preview-settings"]["horizontal"]])) $_SESSION["preview-settings"]["horizontal"] = $preview_settings["horizontal"];
+if (!isset($_SESSION["preview-settings"]["size_mode"]) || !in_array($_SESSION["preview-settings"]["size_mode"], array("comfortable", "large", "actual"))) $_SESSION["preview-settings"]["size_mode"] = $preview_settings["size_mode"];
+if (!isset($_SESSION["preview-settings"]["display_scale"]) || !isset($display_scales[$_SESSION["preview-settings"]["display_scale"]])) $_SESSION["preview-settings"]["display_scale"] = $preview_settings["display_scale"];
+if (!isset($_SESSION["preview-settings"]["word_wrap"]) || !in_array($_SESSION["preview-settings"]["word_wrap"], array("off", "on"))) $_SESSION["preview-settings"]["word_wrap"] = $preview_settings["word_wrap"];
+if (!isset($_SESSION["preview-settings"]["pixelate"]) || !in_array($_SESSION["preview-settings"]["pixelate"], array("off", "on"))) $_SESSION["preview-settings"]["pixelate"] = $preview_settings["pixelate"];
+if (!isset($_SESSION["preview-settings"]["output_pixelate"]) || !in_array($_SESSION["preview-settings"]["output_pixelate"], array("off", "on"))) $_SESSION["preview-settings"]["output_pixelate"] = $preview_settings["output_pixelate"];
+if (!isset($_SESSION["preview-settings"]["rotation"]) || !in_array($_SESSION["preview-settings"]["rotation"], array("0", "90", "180", "270"))) $_SESSION["preview-settings"]["rotation"] = $preview_settings["rotation"];
+
+if (isset($_POST["set-preview-settings"])) {
+	if (isset($_POST["background"]) && isset($colors[$_POST["background"]])) $_SESSION["preview-settings"]["background"] = $_POST["background"];
+	if (isset($_POST["foreground"]) && isset($colors[$_POST["foreground"]])) $_SESSION["preview-settings"]["foreground"] = $_POST["foreground"];
+	if (isset($_POST["vertical"]) && isset($vertical_positions[$_POST["vertical"]])) $_SESSION["preview-settings"]["vertical"] = $_POST["vertical"];
+	if (isset($_POST["horizontal"]) && isset($horizontal_positions[$_POST["horizontal"]])) $_SESSION["preview-settings"]["horizontal"] = $_POST["horizontal"];
+	if (isset($_POST["size_mode"]) && in_array($_POST["size_mode"], array("comfortable", "large", "actual"))) $_SESSION["preview-settings"]["size_mode"] = $_POST["size_mode"];
+	if (isset($_POST["display_scale"]) && isset($display_scales[$_POST["display_scale"]])) $_SESSION["preview-settings"]["display_scale"] = $_POST["display_scale"];
+	if (isset($_POST["word_wrap"]) && in_array($_POST["word_wrap"], array("off", "on"))) $_SESSION["preview-settings"]["word_wrap"] = $_POST["word_wrap"];
+	if (isset($_POST["pixelate"]) && in_array($_POST["pixelate"], array("off", "on"))) $_SESSION["preview-settings"]["pixelate"] = $_POST["pixelate"];
+	if (isset($_POST["output_pixelate"]) && in_array($_POST["output_pixelate"], array("off", "on"))) $_SESSION["preview-settings"]["output_pixelate"] = $_POST["output_pixelate"];
+	if (isset($_POST["rotation"]) && in_array($_POST["rotation"], array("0", "90", "180", "270"))) $_SESSION["preview-settings"]["rotation"] = $_POST["rotation"];
+	file_put_contents($settings_state_file, json_encode($_SESSION["preview-settings"]));
+	exit();
+}
+
+$selected_background = $_SESSION["preview-settings"]["background"];
+$selected_foreground = $_SESSION["preview-settings"]["foreground"];
+$selected_vertical = $_SESSION["preview-settings"]["vertical"];
+$selected_horizontal = $_SESSION["preview-settings"]["horizontal"];
+$selected_size_mode = $_SESSION["preview-settings"]["size_mode"];
+if ($selected_device != "m5stickcplus" && $selected_size_mode == "actual") {
+	$selected_size_mode = "comfortable";
+	$_SESSION["preview-settings"]["size_mode"] = $selected_size_mode;
+}
+$selected_display_scale = $_SESSION["preview-settings"]["display_scale"];
+$selected_word_wrap = $_SESSION["preview-settings"]["word_wrap"];
+$selected_pixelate = $_SESSION["preview-settings"]["pixelate"];
+$selected_output_pixelate = $_SESSION["preview-settings"]["output_pixelate"];
+$selected_rotation = $_SESSION["preview-settings"]["rotation"];
+$physical_scale = $display_scales[$selected_display_scale]["scale"];
+$use_physical_size = ($selected_device == "m5stickcplus" && $selected_size_mode == "actual");
+$device_scale = ($selected_size_mode == "large") ? 1.0 : 0.5;
+$rotation = intval($selected_rotation);
+$frame_width_raw = $devices[$selected_device]["frame_width"];
+$frame_height_raw = $devices[$selected_device]["frame_height"];
+$screen_left_raw = $devices[$selected_device]["screen_left"];
+$screen_top_raw = $devices[$selected_device]["screen_top"];
+$screen_width_raw = $devices[$selected_device]["screen_width"];
+$screen_height_raw = $devices[$selected_device]["screen_height"];
+
+if ($rotation == 90) {
+	$rotated_frame_width_raw = $frame_height_raw;
+	$rotated_frame_height_raw = $frame_width_raw;
+	$rotated_screen_left_raw = $frame_height_raw - ($screen_top_raw + $screen_height_raw);
+	$rotated_screen_top_raw = $screen_left_raw;
+	$rotated_screen_width_raw = $screen_height_raw;
+	$rotated_screen_height_raw = $screen_width_raw;
+} elseif ($rotation == 180) {
+	$rotated_frame_width_raw = $frame_width_raw;
+	$rotated_frame_height_raw = $frame_height_raw;
+	$rotated_screen_left_raw = $frame_width_raw - ($screen_left_raw + $screen_width_raw);
+	$rotated_screen_top_raw = $frame_height_raw - ($screen_top_raw + $screen_height_raw);
+	$rotated_screen_width_raw = $screen_width_raw;
+	$rotated_screen_height_raw = $screen_height_raw;
+} elseif ($rotation == 270) {
+	$rotated_frame_width_raw = $frame_height_raw;
+	$rotated_frame_height_raw = $frame_width_raw;
+	$rotated_screen_left_raw = $screen_top_raw;
+	$rotated_screen_top_raw = $frame_width_raw - ($screen_left_raw + $screen_width_raw);
+	$rotated_screen_width_raw = $screen_height_raw;
+	$rotated_screen_height_raw = $screen_width_raw;
+} else {
+	$rotated_frame_width_raw = $frame_width_raw;
+	$rotated_frame_height_raw = $frame_height_raw;
+	$rotated_screen_left_raw = $screen_left_raw;
+	$rotated_screen_top_raw = $screen_top_raw;
+	$rotated_screen_width_raw = $screen_width_raw;
+	$rotated_screen_height_raw = $screen_height_raw;
+}
+
+$frame_width = intval($rotated_frame_width_raw * $device_scale);
+$frame_height = intval($rotated_frame_height_raw * $device_scale);
+$screen_left = intval($rotated_screen_left_raw * $device_scale);
+$screen_top = intval($rotated_screen_top_raw * $device_scale);
+$screen_width = intval($rotated_screen_width_raw * $device_scale);
+$screen_height = intval($rotated_screen_height_raw * $device_scale);
+$output_width = $screen_width;
+$output_height = $screen_height;
+$background_width = intval($frame_width_raw * $device_scale);
+$background_height = intval($frame_height_raw * $device_scale);
+$background_left = intval(($frame_width - $background_width) / 2);
+$background_top = intval(($frame_height - $background_height) / 2);
+if ($use_physical_size) {
+	$physical_width = $devices[$selected_device]["physical_width_mm"] * $physical_scale;
+	$physical_height = $devices[$selected_device]["physical_height_mm"] * $physical_scale;
+	$scale_x = $physical_width / $frame_width_raw;
+	$scale_y = $physical_height / $frame_height_raw;
+	$frame_width = ($rotation == 90 || $rotation == 270) ? $physical_height . "mm" : $physical_width . "mm";
+	$frame_height = ($rotation == 90 || $rotation == 270) ? $physical_width . "mm" : $physical_height . "mm";
+	$screen_left = ($rotated_screen_left_raw * (($rotation == 90 || $rotation == 270) ? $scale_y : $scale_x)) . "mm";
+	$screen_top = ($rotated_screen_top_raw * (($rotation == 90 || $rotation == 270) ? $scale_x : $scale_y)) . "mm";
+	$screen_width = ($rotated_screen_width_raw * (($rotation == 90 || $rotation == 270) ? $scale_y : $scale_x)) . "mm";
+	$screen_height = ($rotated_screen_height_raw * (($rotation == 90 || $rotation == 270) ? $scale_x : $scale_y)) . "mm";
+	$background_width = $physical_width . "mm";
+	$background_height = $physical_height . "mm";
+	$background_left = "calc((" . $frame_width . " - " . $background_width . ") / 2)";
+	$background_top = "calc((" . $frame_height . " - " . $background_height . ") / 2)";
+} else {
+	$frame_width .= "px";
+	$frame_height .= "px";
+	$screen_left .= "px";
+	$screen_top .= "px";
+	$screen_width .= "px";
+	$screen_height .= "px";
+	$background_width .= "px";
+	$background_height .= "px";
+	$background_left .= "px";
+	$background_top .= "px";
+}
+
 if (isset($_POST["get-font"])) {
 
 	if (!isset($_POST['size']) || !is_numeric($_POST['size']) || $_POST['size'] < 3 || $_POST['size'] > 200) exit();
@@ -11,9 +233,12 @@ if (isset($_POST["get-font"])) {
 
 	if (!isset($_POST['font'])) exit();	
 	$font = escapeshellarg("fonts/" . $_POST['font']);
+	$fontconvert = getenv('FONTCONVERT_PATH');
+	if ($fontconvert === false || $fontconvert === '') $fontconvert = './fontconvert';
+	$fontconvert = escapeshellcmd($fontconvert);
 	
 	
-	exec("./fontconvert $font $size", $output, $retval);
+	exec("$fontconvert $font $size", $output, $retval);
 	if ($retval != 0) exit();
 	
 	$filename = $output[count($output) - 6];
@@ -28,6 +253,21 @@ if (isset($_POST["get-font"])) {
 	exit();
 }
 
+if (isset($_POST["delete-font"])) {
+	if (isset($_POST["font-to-delete"])) {
+		$delete_font = basename($_POST["font-to-delete"]);
+		if (preg_match('/^[a-zA-Z0-9 ._-]+\\.ttf$/i', $delete_font)) {
+			$delete_file = "fonts/user/" . $delete_font;
+			if (file_exists($delete_file)) unlink($delete_file);
+			foreach ($_SESSION['fonts'] as $index => $font) {
+				if ($font == $delete_font) unset($_SESSION['fonts'][$index]);
+			}
+		}
+	}
+	header("Location: " . $_SERVER["PHP_SELF"]);
+	exit();
+}
+
 
 if (!isset($_SESSION['fonts'])) $_SESSION['fonts'] = array();
 
@@ -35,6 +275,16 @@ if (!isset($_SESSION['fonts'])) $_SESSION['fonts'] = array();
 foreach ($_SESSION['fonts'] as $index => $font) {
 	if (!file_exists("fonts/user/$font")) unset($_SESSION['fonts'][$index]);
 }
+
+$user_fonts = array();
+foreach (glob("fonts/user/*.ttf") as $font_file) {
+	$user_fonts[] = basename($font_file);
+}
+foreach (glob("fonts/user/*.TTF") as $font_file) {
+	$font_name = basename($font_file);
+	if (!in_array($font_name, $user_fonts)) $user_fonts[] = $font_name;
+}
+sort($user_fonts);
 
 
 $select_font = "";
@@ -49,6 +299,10 @@ if (isset($_POST["submit-file"])) {
 			if (!in_array($filename, $_SESSION['fonts'])) {
 				array_push($_SESSION['fonts'], $filename);
 				if (count($_SESSION['fonts']) > 5) array_shift($_SESSION['fonts']);
+			}
+			if (!in_array($filename, $user_fonts)) {
+				$user_fonts[] = $filename;
+				sort($user_fonts);
 			}
 		}
 	}
@@ -83,12 +337,33 @@ if (isset($_POST["submit-file"])) {
 		}
 		td#first {
 			margin: 0px;
-			padding-top: 90px;
-			padding-left:50px;
-			background-image:url('M5Stack-bg.png');
-			background-repeat:no-repeat;
-			width: 480px;
-			height: 429px;
+			width: <?php echo $frame_width; ?>;
+			height: <?php echo $frame_height; ?>;
+		}
+		#device-frame {
+			position: relative;
+			width: <?php echo $frame_width; ?>;
+			height: <?php echo $frame_height; ?>;
+			overflow: visible;
+		}
+		#device-background {
+			position: absolute;
+			left: <?php echo $background_left; ?>;
+			top: <?php echo $background_top; ?>;
+			width: <?php echo $background_width; ?>;
+			height: <?php echo $background_height; ?>;
+			transform: rotate(<?php echo $rotation; ?>deg);
+			transform-origin: center center;
+			z-index: 1;
+		}
+		#image {
+			position: absolute;
+			left: <?php echo $screen_left; ?>;
+			top: <?php echo $screen_top; ?>;
+			width: <?php echo $screen_width; ?>;
+			height: <?php echo $screen_height; ?>;
+			image-rendering: <?php echo ($selected_pixelate == "on") ? "pixelated" : "auto"; ?>;
+			z-index: 2;
 		}
 		td#second {
 			width: 270px;
@@ -97,7 +372,11 @@ if (isset($_POST["submit-file"])) {
 			width: 210px;
 		}
 		#textfield {
-			width: 200px;
+			width: 66%;
+			height: 8em;
+		}
+		#background, #foreground {
+			width: 120px;
 		}
 		#sizefield {
 			width: 35px;
@@ -128,7 +407,10 @@ if (isset($_POST["submit-file"])) {
 
 		<tr>
 			<td id="first">
-				<img id="image" src="image.php">
+				<div id="device-frame">
+					<img id="device-background" src="<?php echo $devices[$selected_device]["image"]; ?>">
+					<img id="image" src="image.php">
+				</div>
 			</td>
 			<td id="second">
 			
@@ -149,9 +431,12 @@ if (isset($_POST["submit-file"])) {
 				<input type="radio" name="font" value="FreeMonoOblique.ttf" onChange="updateImage()">&nbsp;FreeMonoOblique<br>
 				
 				<h3>Your fonts</h3>
+				<input type="hidden" name="font-to-delete" id="font-to-delete" value="">
 				<?php
-					foreach ($_SESSION['fonts'] as $font) {
-						echo "<input type=\"radio\" name=\"font\" value=\"user/$font\" onChange=\"updateImage()\"> " . str_replace(".TTF", "", str_replace(".ttf", "", $font)) . "<br>\n";
+					foreach ($user_fonts as $font) {
+						$font_label = str_replace(".TTF", "", str_replace(".ttf", "", $font));
+						echo "<input type=\"radio\" name=\"font\" value=\"user/$font\" onChange=\"updateImage()\"> $font_label ";
+						echo "<button type=\"submit\" name=\"delete-font\" value=\"1\" onClick=\"return deleteFont(" . htmlspecialchars(json_encode($font), ENT_QUOTES, 'UTF-8') . ");\">Delete</button><br>\n";
 					}
 				?>
 				
@@ -160,6 +445,48 @@ if (isset($_POST["submit-file"])) {
 				<input type="submit" value="Upload" name="submit-file" onClick="return validateUpload();"> <input type="file" name="fileToUpload" id="fileToUpload"> 
 			</td>
 			<td id="third">
+				<h3>Device</h3>
+				<select name="device" id="device" onChange="updateDevice()">
+					<?php
+						foreach ($devices as $device_id => $device) {
+							$selected = ($device_id == $selected_device) ? " selected" : "";
+							echo "<option value=\"$device_id\"$selected>" . $device["name"] . " (" . $device["width"] . "x" . $device["height"] . ")</option>\n";
+						}
+					?>
+				</select>
+
+				&nbsp;<br>
+				&nbsp;<br>
+
+				Size<br>
+				<select name="size-mode" id="size-mode" onChange="savePreviewSettings(true)">
+					<option value="comfortable"<?php if ($selected_size_mode == "comfortable") echo " selected"; ?>>Comfortable (50%)</option>
+					<option value="large"<?php if ($selected_size_mode == "large") echo " selected"; ?>>Large (100%)</option>
+					<option value="actual"<?php if ($selected_size_mode == "actual") echo " selected"; ?><?php if ($selected_device != "m5stickcplus") echo " disabled"; ?>>Actual physical size</option>
+				</select>
+
+				&nbsp;<br>
+				&nbsp;<br>
+
+				Display<br>
+				<select name="display-scale" id="display-scale" onChange="savePreviewSettings(true)"<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "actual") echo " disabled"; ?>>
+					<?php
+						foreach ($display_scales as $display_id => $display) {
+							$selected = ($display_id == $selected_display_scale) ? " selected" : "";
+							echo "<option value=\"$display_id\"$selected>" . $display["name"] . " (" . intval($display["scale"] * 100) . "%)</option>\n";
+						}
+					?>
+				</select>
+
+				&nbsp;<br>
+				&nbsp;<br>
+
+				<input type="button" id="rotate-button" value="Rotate <?php echo $selected_rotation; ?> deg" onClick="rotateDevice()">
+				<input type="hidden" id="rotation" value="<?php echo $selected_rotation; ?>">
+
+				&nbsp;<br>
+				&nbsp;<br>
+
 				<h3>Font Size</h3>
 				<input type="text" name="size" id="sizefield" value="20" onInput="updateImage()"> points
 				
@@ -167,7 +494,66 @@ if (isset($_POST["submit-file"])) {
 				&nbsp;<br>
 
 				<h3>Demo text</h3>
-				<input type="text" name="text" id="textfield" value="Testing 123..." onInput="updateImage()">
+				<textarea name="text" id="textfield" rows="8" onInput="updateImage()">Testing 123...</textarea>
+
+				&nbsp;<br>
+				<input type="checkbox" id="word-wrap" value="on" onChange="updatePreviewSettings()"<?php if ($selected_word_wrap == "on") echo " checked"; ?>> Word wrap
+
+				&nbsp;<br>
+				<input type="button" id="pixelate-button" value="<?php echo ($selected_pixelate == "on") ? "Smooth preview" : "Pixelate preview"; ?>" onClick="togglePixelate()">
+				<input type="hidden" id="pixelate" value="<?php echo $selected_pixelate; ?>">
+
+				&nbsp;<br>
+				<input type="checkbox" id="output-pixelate" value="on" onChange="updatePreviewSettings()"<?php if ($selected_output_pixelate == "on") echo " checked"; ?>> Pixel-lock output
+
+				&nbsp;<br>
+				&nbsp;<br>
+
+				<h3>Colours</h3>
+				Background<br>
+				<select name="background" id="background" onChange="updatePreviewSettings()">
+					<?php
+						foreach ($colors as $color_id => $color) {
+							$selected = ($color_id == $selected_background) ? " selected" : "";
+							echo "<option value=\"$color_id\"$selected>" . $color["name"] . "</option>\n";
+						}
+					?>
+				</select>
+
+				&nbsp;<br>
+				&nbsp;<br>
+
+				Foreground<br>
+				<select name="foreground" id="foreground" onChange="updatePreviewSettings()">
+					<?php
+						foreach ($colors as $color_id => $color) {
+							$selected = ($color_id == $selected_foreground) ? " selected" : "";
+							echo "<option value=\"$color_id\"$selected>" . $color["name"] . "</option>\n";
+						}
+					?>
+				</select>
+
+				&nbsp;<br>
+				&nbsp;<br>
+
+				<h3>Position</h3>
+				Vertical<br>
+				<?php
+					foreach ($vertical_positions as $position_id => $position_name) {
+						$checked = ($position_id == $selected_vertical) ? " checked" : "";
+						echo "<input type=\"radio\" name=\"vertical\" value=\"$position_id\"$checked onChange=\"updatePreviewSettings()\"> $position_name<br>\n";
+					}
+				?>
+
+				&nbsp;<br>
+
+				Horizontal<br>
+				<?php
+					foreach ($horizontal_positions as $position_id => $position_name) {
+						$checked = ($position_id == $selected_horizontal) ? " checked" : "";
+						echo "<input type=\"radio\" name=\"horizontal\" value=\"$position_id\"$checked onChange=\"updatePreviewSettings()\"> $position_name<br>\n";
+					}
+				?>
 				
 				&nbsp;<br>
 				&nbsp;<br>
@@ -251,7 +637,107 @@ void loop() {
 	<script>		
 	
 		function updateImage() {
-			document.getElementById("image").src = "image.php?font=" + font() + "&size=" + document.getElementById("sizefield").value + "&text=" + document.getElementById("textfield").value+ "#" + new Date().getTime();
+			saveFormState();
+			document.getElementById("image").src = "image.php?device=" + encodeURIComponent(device()) + "&font=" + encodeURIComponent(font()) + "&size=" + encodeURIComponent(document.getElementById("sizefield").value) + "&text=" + encodeURIComponent(previewText()) + "&background=" + encodeURIComponent(background()) + "&foreground=" + encodeURIComponent(foreground()) + "&vertical=" + encodeURIComponent(vertical()) + "&horizontal=" + encodeURIComponent(horizontal()) + "&word_wrap=" + encodeURIComponent(wordWrap()) + "&pixelate=" + encodeURIComponent(pixelate()) + "&output_pixelate=" + encodeURIComponent(outputPixelate()) + "&output_width=<?php echo $output_width; ?>&output_height=<?php echo $output_height; ?>&rotation=" + encodeURIComponent(rotation()) + "#" + new Date().getTime();
+		}
+
+		function previewText() {
+			return document.getElementById("textfield").value.replace(/\r\n/g, "\\n").replace(/\r/g, "\\n").replace(/\n/g, "\\n");
+		}
+
+		function updateDevice() {
+			var request = new XMLHttpRequest();
+			request.open("POST", "index.php", true);
+			request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+			request.onload = function() {
+				window.location.reload();
+			};
+			request.send("set-device=1&device=" + encodeURIComponent(device()));
+		}
+
+		function device() {
+			return document.getElementById("device").value;
+		}
+
+		function updatePreviewSettings() {
+			savePreviewSettings(false);
+		}
+
+		function savePreviewSettings(reload) {
+			saveFormState();
+			var request = new XMLHttpRequest();
+			request.open("POST", "index.php", true);
+			request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+			request.onload = function() {
+				if (reload) {
+					window.location.reload();
+				} else {
+					updateImage();
+				}
+			};
+			request.send("set-preview-settings=1&background=" + encodeURIComponent(background()) + "&foreground=" + encodeURIComponent(foreground()) + "&vertical=" + encodeURIComponent(vertical()) + "&horizontal=" + encodeURIComponent(horizontal()) + "&size_mode=" + encodeURIComponent(sizeMode()) + "&display_scale=" + encodeURIComponent(displayScale()) + "&word_wrap=" + encodeURIComponent(wordWrap()) + "&pixelate=" + encodeURIComponent(pixelate()) + "&output_pixelate=" + encodeURIComponent(outputPixelate()) + "&rotation=" + encodeURIComponent(rotation()));
+		}
+
+		function background() {
+			return document.getElementById("background").value;
+		}
+
+		function foreground() {
+			return document.getElementById("foreground").value;
+		}
+
+		function sizeMode() {
+			return document.getElementById("size-mode").value;
+		}
+
+		function displayScale() {
+			return document.getElementById("display-scale").value;
+		}
+
+		function wordWrap() {
+			return document.getElementById("word-wrap").checked ? "on" : "off";
+		}
+
+		function outputPixelate() {
+			return document.getElementById("output-pixelate").checked ? "on" : "off";
+		}
+
+		function togglePixelate() {
+			var current = document.getElementById("pixelate").value;
+			document.getElementById("pixelate").value = (current == "on") ? "off" : "on";
+			savePreviewSettings(true);
+		}
+
+		function pixelate() {
+			return document.getElementById("pixelate").value;
+		}
+
+		function rotateDevice() {
+			var rotations = ["0", "90", "180", "270"];
+			var current = document.getElementById("rotation").value;
+			var index = rotations.indexOf(current);
+			document.getElementById("rotation").value = rotations[(index + 1) % rotations.length];
+			savePreviewSettings(true);
+		}
+
+		function rotation() {
+			return document.getElementById("rotation").value;
+		}
+
+		function vertical() {
+			return checkedValue("vertical");
+		}
+
+		function horizontal() {
+			return checkedValue("horizontal");
+		}
+
+		function checkedValue(name) {
+			var options = document.getElementsByName(name);
+			for (var i = 0, length = options.length; i < length; i++) {
+				if (options[i].checked) return options[i].value;
+			}
+			return "centre";
 		}
 	
 		function font() {
@@ -265,6 +751,7 @@ void loop() {
 		}
 		
 		function setFont() {
+			restoreFormState();
 			var e = document.getElementsByName("font");
 			for (var i = 0; i < e.length; i++) {
 				if (e[i].value == "<?php echo $select_font?>") {
@@ -273,6 +760,40 @@ void loop() {
 				}
 			}
 			updateImage();
+		}
+
+		function saveFormState() {
+			if (!window.localStorage) return;
+			localStorage.setItem("truetype2gfx.font", font());
+			localStorage.setItem("truetype2gfx.size", document.getElementById("sizefield").value);
+			localStorage.setItem("truetype2gfx.text", document.getElementById("textfield").value);
+		}
+
+		function restoreFormState() {
+			if (!window.localStorage) return;
+			var storedSize = localStorage.getItem("truetype2gfx.size");
+			var storedText = localStorage.getItem("truetype2gfx.text");
+			var storedFont = localStorage.getItem("truetype2gfx.font");
+
+			if (storedSize !== null) document.getElementById("sizefield").value = storedSize;
+			if (storedText !== null) document.getElementById("textfield").value = storedText;
+			if (storedFont !== null) {
+				var fonts = document.getElementsByName("font");
+				for (var i = 0; i < fonts.length; i++) {
+					if (fonts[i].value == storedFont) {
+						fonts[i].checked = true;
+						break;
+					}
+				}
+			}
+		}
+
+		function deleteFont(fontName) {
+			document.getElementById("font-to-delete").value = fontName;
+			if (window.localStorage && localStorage.getItem("truetype2gfx.font") == "user/" + fontName) {
+				localStorage.removeItem("truetype2gfx.font");
+			}
+			return confirm("Delete " + fontName + "?");
 		}
 		
 		function validateUpload() {

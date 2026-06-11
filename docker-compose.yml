@@ -1,0 +1,12 @@
+services:
+  truetype2gfx:
+    container_name: truetype2gfx
+    image: truetype2gfx-scuba-hacker
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8088:80"
+    environment:
+      FONTCONVERT_PATH: /usr/local/bin/fontconvert
+    volumes:
+      - /tmp/truetype2gfx:/var/www/html/fonts/user

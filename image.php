@@ -6,8 +6,88 @@ putenv('GDFONTPATH=' . realpath('./fonts'));
 header('Content-Type: image/png');
 header('Cache-Control: no-cache, must-revalidate');
 
+$devices = array(
+    "m5stack" => array("width" => 320, "height" => 240),
+    "m5stickcplus" => array("width" => 135, "height" => 240)
+);
+
+$colors = array(
+    "black" => array(0, 0, 0),
+    "white" => array(255, 255, 255),
+    "red" => array(255, 0, 0),
+    "green" => array(0, 255, 0),
+    "blue" => array(0, 0, 255),
+    "cyan" => array(0, 255, 255),
+    "magenta" => array(255, 0, 255),
+    "yellow" => array(255, 255, 0)
+);
+
+$vertical_positions = array("top", "centre", "bottom");
+$horizontal_positions = array("left", "centre", "right");
+
+$device = "m5stack";
+if (isset($_GET["device"]) && isset($devices[$_GET["device"]])) {
+    $device = $_GET["device"];
+}
+
+$background_color = "white";
+if (isset($_GET["background"]) && isset($colors[$_GET["background"]])) {
+    $background_color = $_GET["background"];
+}
+
+$foreground_color = "black";
+if (isset($_GET["foreground"]) && isset($colors[$_GET["foreground"]])) {
+    $foreground_color = $_GET["foreground"];
+}
+
+$vertical = "centre";
+if (isset($_GET["vertical"]) && in_array($_GET["vertical"], $vertical_positions)) {
+    $vertical = $_GET["vertical"];
+}
+
+$horizontal = "centre";
+if (isset($_GET["horizontal"]) && in_array($_GET["horizontal"], $horizontal_positions)) {
+    $horizontal = $_GET["horizontal"];
+}
+
+$word_wrap = false;
+if (isset($_GET["word_wrap"]) && $_GET["word_wrap"] === "on") {
+    $word_wrap = true;
+}
+
+$pixelate = false;
+if (isset($_GET["pixelate"]) && $_GET["pixelate"] === "on") {
+    $pixelate = true;
+}
+
+$output_pixelate = false;
+if (isset($_GET["output_pixelate"]) && $_GET["output_pixelate"] === "on") {
+    $output_pixelate = true;
+}
+
+$output_width = 0;
+if (isset($_GET["output_width"]) && is_numeric($_GET["output_width"])) {
+    $output_width = intval($_GET["output_width"]);
+}
+
+$output_height = 0;
+if (isset($_GET["output_height"]) && is_numeric($_GET["output_height"])) {
+    $output_height = intval($_GET["output_height"]);
+}
+
+$rotation = "0";
+if (isset($_GET["rotation"]) && in_array($_GET["rotation"], array("0", "90", "180", "270"))) {
+    $rotation = $_GET["rotation"];
+}
+
 // Create the image
-$im = imagecreatetruecolor(320, 240);
+$image_width = $devices[$device]["width"];
+$image_height = $devices[$device]["height"];
+if ($rotation === "90" || $rotation === "270") {
+    $image_width = $devices[$device]["height"];
+    $image_height = $devices[$device]["width"];
+}
+$im = imagecreatetruecolor($image_width, $image_height);
 
 $dpi = 141;
 if (isset($_GET["dpi"]) && is_numeric($_GET["dpi"]) && $_GET["dpi"] > 0 && $_GET["dpi"] <= 300) {
@@ -19,6 +99,8 @@ if (isset($_GET["text"])) {
     $text = htmlspecialchars($_GET["text"], ENT_QUOTES, 'UTF-8');
     if (strlen($text) > 100) $text = substr($text, 0, 100);
 }
+$text = str_replace("\\n", "\n", $text);
+$text = str_replace(array("\r\n", "\r"), "\n", $text);
 
 $size = (20 * $dpi) / 96;
 if (isset($_GET["size"]) && is_numeric($_GET["size"]) && $_GET["size"] >= 3 && $_GET["size"] <= 200) {
@@ -27,7 +109,7 @@ if (isset($_GET["size"]) && is_numeric($_GET["size"]) && $_GET["size"] >= 3 && $
 
 $font = 'FreeSans.ttf';
 if (isset($_GET["font"])) {
-    $font = basename($_GET["font"]);
+    $requested_font = $_GET["font"];
     // Only allow specific font files
     $allowed_fonts = [
         'FreeSans.ttf', 'FreeSansBold.ttf', 'FreeSansBoldOblique.ttf', 'FreeSansOblique.ttf',
@@ -36,34 +118,184 @@ if (isset($_GET["font"])) {
     ];
     
     // Check if it's a user font (starts with 'user/')
-    if (strpos($font, 'user/') === 0) {
-        $user_font = basename(substr($font, 5));
-        if (preg_match('/^[a-zA-Z0-9._-]+\\.ttf$/i', $user_font)) {
+    if (strpos($requested_font, 'user/') === 0) {
+        $user_font = basename(substr($requested_font, 5));
+        if (preg_match('/^[a-zA-Z0-9 ._-]+\\.ttf$/i', $user_font) && file_exists('./fonts/user/' . $user_font)) {
             $font = 'user/' . $user_font;
         } else {
             $font = 'FreeSans.ttf';
         }
-    } elseif (!in_array($font, $allowed_fonts)) {
+    } elseif (in_array(basename($requested_font), $allowed_fonts)) {
+        $font = basename($requested_font);
+    } else {
         $font = 'FreeSans.ttf';
     }
 }
 
+$font_path = realpath('./fonts/' . $font);
+if ($font_path === false) {
+    $font_path = realpath('./fonts/FreeSans.ttf');
+}
+
+function text_width($size, $font_path, $text) {
+    if ($text === "") return 0;
+    $bbox = imagettfbbox($size, 0, $font_path, $text);
+    return abs($bbox[4] - $bbox[0]);
+}
+
+function split_word_to_width($word, $max_width, $size, $font_path) {
+    $chunks = array();
+    while ($word !== "") {
+        $low = 1;
+        $high = strlen($word);
+        $fit = 0;
+        while ($low <= $high) {
+            $mid = intval(($low + $high) / 2);
+            $candidate = substr($word, 0, $mid);
+            if (text_width($size, $font_path, $candidate) <= $max_width) {
+                $fit = $mid;
+                $low = $mid + 1;
+            } else {
+                $high = $mid - 1;
+            }
+        }
+        $split = $fit + 1;
+        if ($split > strlen($word)) $split = strlen($word);
+        if ($split < 1) $split = 1;
+        $chunks[] = substr($word, 0, $split);
+        $word = substr($word, $split);
+    }
+    return $chunks;
+}
+
+function wrap_line_to_width($line, $max_width, $size, $font_path) {
+    if ($line === "") return array("");
+    $wrapped = array();
+    $words = preg_split('/\\s+/', trim($line));
+    $current = "";
+
+    foreach ($words as $word) {
+        if ($word === "") continue;
+        if (text_width($size, $font_path, $word) > $max_width) {
+            if ($current !== "") {
+                $wrapped[] = $current;
+                $current = "";
+            }
+            $chunks = split_word_to_width($word, $max_width, $size, $font_path);
+            foreach ($chunks as $index => $chunk) {
+                if ($index === count($chunks) - 1) {
+                    $current = $chunk;
+                } else {
+                    $wrapped[] = $chunk;
+                }
+            }
+            continue;
+        }
+
+        $candidate = ($current === "") ? $word : $current . " " . $word;
+        if (text_width($size, $font_path, $candidate) <= $max_width) {
+            $current = $candidate;
+        } else {
+            if ($current !== "") $wrapped[] = $current;
+            $current = $word;
+        }
+    }
+
+    if ($current !== "") $wrapped[] = $current;
+    if (count($wrapped) === 0) $wrapped[] = "";
+    return $wrapped;
+}
+
 // Create some colors
-$white = imagecolorallocate($im, 240, 240, 240);
-$black = imagecolorallocate($im, 0, 0, 0);
-imagefilledrectangle($im, 0, 0, 319, 239, $white);
+$bg_rgb = $colors[$background_color];
+$fg_rgb = $colors[$foreground_color];
+$background = imagecolorallocate($im, $bg_rgb[0], $bg_rgb[1], $bg_rgb[2]);
+$foreground = imagecolorallocate($im, $fg_rgb[0], $fg_rgb[1], $fg_rgb[2]);
+imagefilledrectangle($im, 0, 0, imagesx($im) - 1, imagesy($im) - 1, $background);
 
-// First we create our bounding box for the first text
-$bbox = imagettfbbox($size, 0, $font, $text);
+$mask = null;
+if ($pixelate) {
+    $mask = imagecreatetruecolor(imagesx($im), imagesy($im));
+    $mask_background = imagecolorallocate($mask, 0, 0, 0);
+    imagefilledrectangle($mask, 0, 0, imagesx($mask) - 1, imagesy($mask) - 1, $mask_background);
+    $mask_foreground = imagecolorallocate($mask, 255, 255, 255);
+}
 
-// Center text
-$w = abs($bbox[4] - $bbox[0]);
+$lines = explode("\n", $text);
+if ($word_wrap) {
+    $wrapped_lines = array();
+    $max_text_width = imagesx($im) - 8;
+    foreach ($lines as $line) {
+        $wrapped_lines = array_merge($wrapped_lines, wrap_line_to_width($line, $max_text_width, $size, $font_path));
+    }
+    $lines = $wrapped_lines;
+}
+$line_metrics = array();
+$block_width = 0;
+$block_height = 0;
 
-$cx = (imagesx($im) / 2) - ($w / 2) - ($bbox[0] / 2);
-$cy = (imagesy($im) / 2) - ($bbox[5] / 2) - ($bbox[1] / 2);
+foreach ($lines as $line) {
+    $metric_line = ($line === "") ? " " : $line;
+    $bbox = imagettfbbox($size, 0, $font_path, $metric_line);
+    $line_width = abs($bbox[4] - $bbox[0]);
+    $line_height = abs($bbox[5] - $bbox[1]);
+    if ($word_wrap && $line_width > imagesx($im) - 8) $line_width = imagesx($im) - 8;
+    $line_metrics[] = array("text" => $line, "bbox" => $bbox, "width" => $line_width, "height" => $line_height);
+    if ($line_width > $block_width) $block_width = $line_width;
+    $block_height += $line_height;
+}
 
-// Add the text
-imagettftext($im, $size, 0, $cx, $cy, $black, $font, $text);
+$line_gap = max(2, intval($size * 0.25));
+if (count($line_metrics) > 1) $block_height += $line_gap * (count($line_metrics) - 1);
+
+$padding = 4;
+if ($vertical === "top") {
+    $y = $padding;
+} elseif ($vertical === "bottom") {
+    $y = imagesy($im) - $block_height - $padding;
+} else {
+    $y = (imagesy($im) / 2) - ($block_height / 2);
+}
+
+foreach ($line_metrics as $line_metric) {
+    $bbox = $line_metric["bbox"];
+    if ($horizontal === "left") {
+        $x = $padding - $bbox[0];
+    } elseif ($horizontal === "right") {
+        $x = imagesx($im) - $line_metric["width"] - $padding - $bbox[0];
+    } else {
+        $x = (imagesx($im) / 2) - ($line_metric["width"] / 2) - ($bbox[0] / 2);
+    }
+    $baseline = $y - $bbox[5];
+    if ($pixelate) {
+        imagettftext($mask, $size, 0, $x, $baseline, $mask_foreground, $font_path, $line_metric["text"]);
+    } else {
+        imagettftext($im, $size, 0, $x, $baseline, $foreground, $font_path, $line_metric["text"]);
+    }
+    $y += $line_metric["height"] + $line_gap;
+}
+
+if ($pixelate) {
+    for ($y = 0; $y < imagesy($mask); $y++) {
+        for ($x = 0; $x < imagesx($mask); $x++) {
+            $pixel = imagecolorat($mask, $x, $y);
+            $r = ($pixel >> 16) & 0xFF;
+            $g = ($pixel >> 8) & 0xFF;
+            $b = $pixel & 0xFF;
+            if (($r + $g + $b) >= 384) {
+                imagesetpixel($im, $x, $y, $foreground);
+            }
+        }
+    }
+    imagedestroy($mask);
+}
+
+if ($output_pixelate && $output_width > 0 && $output_width <= 2000 && $output_height > 0 && $output_height <= 2000 && ($output_width != imagesx($im) || $output_height != imagesy($im))) {
+    $scaled = imagecreatetruecolor($output_width, $output_height);
+    imagecopyresized($scaled, $im, 0, 0, 0, 0, $output_width, $output_height, imagesx($im), imagesy($im));
+    imagedestroy($im);
+    $im = $scaled;
+}
 
 // Using imagepng() results in clearer text compared with imagejpeg()
 imagepng($im);
