@@ -476,6 +476,11 @@ if (isset($_POST["submit-file"])) {
 				&nbsp;<br>
 				
 				<input type="submit" value="Upload" name="submit-file" onClick="return validateUpload();"> <input type="file" name="fileToUpload" id="fileToUpload"> 
+
+				&nbsp;<br>
+				&nbsp;<br>
+
+				<input type="submit" id="get-font" value="Get GFX font file" name="get-font">
 			</td>
 			<td id="third">
 				<div class="controls-grid">
@@ -594,10 +599,6 @@ if (isset($_POST["submit-file"])) {
 								}
 							?>
 						</div>
-					</div>
-
-					<div class="control-group span-2">
-						<input type="submit" id="get-font" value="Get GFX font file" name="get-font">
 					</div>
 
 				</div>
