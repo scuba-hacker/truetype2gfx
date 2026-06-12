@@ -85,7 +85,7 @@ ports:
 ### Preview controls
 
 The preview can target multiple devices, including M5Stack and M5Stick-CPlus. The
-M5Stick-CPlus can be displayed at comfortable size, large 100% size, or actual
+M5Stick-CPlus can be displayed at half size, full 100% size, or actual
 physical size with a display calibration preset.
 
 The demo text box supports multiple lines. Actual line breaks are rendered as line

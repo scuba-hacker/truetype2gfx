@@ -57,8 +57,9 @@ $horizontal_positions = array(
 );
 
 $display_scales = array(
-	"standard" => array("name" => "Standard display", "scale" => 1.0),
-	"imac5k" => array("name" => "iMac 5K Retina", "scale" => 1.18)
+	"standard" => array("name" => "1920x1200 24 inch", "scale" => 1.0),
+	"imac5k" => array("name" => "iMac 5K Retina", "scale" => 1.18),
+	"custom" => array("name" => "Custom Scaling", "scale" => 1.0)
 );
 
 $device_state_file = "fonts/user/.selected-device";
@@ -86,7 +87,7 @@ if (isset($_POST["set-device"])) {
 $selected_device = $_SESSION['device'];
 
 $settings_state_file = "fonts/user/.preview-settings.json";
-$preview_settings = array("background" => "white", "foreground" => "black", "vertical" => "centre", "horizontal" => "centre", "size_mode" => "comfortable", "display_scale" => "standard", "word_wrap" => "off", "pixelate" => "off", "output_pixelate" => "off", "rotation" => "0");
+$preview_settings = array("background" => "white", "foreground" => "black", "vertical" => "centre", "horizontal" => "centre", "size_mode" => "half", "display_scale" => "standard", "custom_scale" => 100, "word_wrap" => "off", "pixelate" => "off", "output_pixelate" => "off", "rotation" => "0");
 if (file_exists($settings_state_file)) {
 	$saved_settings = json_decode(file_get_contents($settings_state_file), true);
 	if (is_array($saved_settings)) {
@@ -94,9 +95,10 @@ if (file_exists($settings_state_file)) {
 		if (isset($saved_settings["foreground"]) && isset($colors[$saved_settings["foreground"]])) $preview_settings["foreground"] = $saved_settings["foreground"];
 		if (isset($saved_settings["vertical"]) && isset($vertical_positions[$saved_settings["vertical"]])) $preview_settings["vertical"] = $saved_settings["vertical"];
 		if (isset($saved_settings["horizontal"]) && isset($horizontal_positions[$saved_settings["horizontal"]])) $preview_settings["horizontal"] = $saved_settings["horizontal"];
-		if (isset($saved_settings["size_mode"]) && in_array($saved_settings["size_mode"], array("comfortable", "large", "actual"))) $preview_settings["size_mode"] = $saved_settings["size_mode"];
-		if (isset($saved_settings["physical_size"]) && $saved_settings["physical_size"] == "on") $preview_settings["size_mode"] = "actual";
+		if (isset($saved_settings["size_mode"]) && in_array($saved_settings["size_mode"], array("half", "full", "physical"))) $preview_settings["size_mode"] = $saved_settings["size_mode"];
+		if (isset($saved_settings["physical_size"]) && $saved_settings["physical_size"] == "on") $preview_settings["size_mode"] = "physical";
 		if (isset($saved_settings["display_scale"]) && isset($display_scales[$saved_settings["display_scale"]])) $preview_settings["display_scale"] = $saved_settings["display_scale"];
+		if (isset($saved_settings["custom_scale"]) && is_numeric($saved_settings["custom_scale"])) $preview_settings["custom_scale"] = max(50, min(400, intval($saved_settings["custom_scale"])));
 		if (isset($saved_settings["word_wrap"]) && in_array($saved_settings["word_wrap"], array("off", "on"))) $preview_settings["word_wrap"] = $saved_settings["word_wrap"];
 		if (isset($saved_settings["pixelate"]) && in_array($saved_settings["pixelate"], array("off", "on"))) $preview_settings["pixelate"] = $saved_settings["pixelate"];
 		if (isset($saved_settings["output_pixelate"]) && in_array($saved_settings["output_pixelate"], array("off", "on"))) $preview_settings["output_pixelate"] = $saved_settings["output_pixelate"];
@@ -109,8 +111,9 @@ if (!isset($colors[$_SESSION["preview-settings"]["background"]])) $_SESSION["pre
 if (!isset($colors[$_SESSION["preview-settings"]["foreground"]])) $_SESSION["preview-settings"]["foreground"] = $preview_settings["foreground"];
 if (!isset($vertical_positions[$_SESSION["preview-settings"]["vertical"]])) $_SESSION["preview-settings"]["vertical"] = $preview_settings["vertical"];
 if (!isset($horizontal_positions[$_SESSION["preview-settings"]["horizontal"]])) $_SESSION["preview-settings"]["horizontal"] = $preview_settings["horizontal"];
-if (!isset($_SESSION["preview-settings"]["size_mode"]) || !in_array($_SESSION["preview-settings"]["size_mode"], array("comfortable", "large", "actual"))) $_SESSION["preview-settings"]["size_mode"] = $preview_settings["size_mode"];
+if (!isset($_SESSION["preview-settings"]["size_mode"]) || !in_array($_SESSION["preview-settings"]["size_mode"], array("half", "full", "physical"))) $_SESSION["preview-settings"]["size_mode"] = $preview_settings["size_mode"];
 if (!isset($_SESSION["preview-settings"]["display_scale"]) || !isset($display_scales[$_SESSION["preview-settings"]["display_scale"]])) $_SESSION["preview-settings"]["display_scale"] = $preview_settings["display_scale"];
+if (!isset($_SESSION["preview-settings"]["custom_scale"]) || !is_numeric($_SESSION["preview-settings"]["custom_scale"]) || $_SESSION["preview-settings"]["custom_scale"] < 50 || $_SESSION["preview-settings"]["custom_scale"] > 400) $_SESSION["preview-settings"]["custom_scale"] = $preview_settings["custom_scale"];
 if (!isset($_SESSION["preview-settings"]["word_wrap"]) || !in_array($_SESSION["preview-settings"]["word_wrap"], array("off", "on"))) $_SESSION["preview-settings"]["word_wrap"] = $preview_settings["word_wrap"];
 if (!isset($_SESSION["preview-settings"]["pixelate"]) || !in_array($_SESSION["preview-settings"]["pixelate"], array("off", "on"))) $_SESSION["preview-settings"]["pixelate"] = $preview_settings["pixelate"];
 if (!isset($_SESSION["preview-settings"]["output_pixelate"]) || !in_array($_SESSION["preview-settings"]["output_pixelate"], array("off", "on"))) $_SESSION["preview-settings"]["output_pixelate"] = $preview_settings["output_pixelate"];
@@ -121,8 +124,9 @@ if (isset($_POST["set-preview-settings"])) {
 	if (isset($_POST["foreground"]) && isset($colors[$_POST["foreground"]])) $_SESSION["preview-settings"]["foreground"] = $_POST["foreground"];
 	if (isset($_POST["vertical"]) && isset($vertical_positions[$_POST["vertical"]])) $_SESSION["preview-settings"]["vertical"] = $_POST["vertical"];
 	if (isset($_POST["horizontal"]) && isset($horizontal_positions[$_POST["horizontal"]])) $_SESSION["preview-settings"]["horizontal"] = $_POST["horizontal"];
-	if (isset($_POST["size_mode"]) && in_array($_POST["size_mode"], array("comfortable", "large", "actual"))) $_SESSION["preview-settings"]["size_mode"] = $_POST["size_mode"];
+	if (isset($_POST["size_mode"]) && in_array($_POST["size_mode"], array("half", "full", "physical"))) $_SESSION["preview-settings"]["size_mode"] = $_POST["size_mode"];
 	if (isset($_POST["display_scale"]) && isset($display_scales[$_POST["display_scale"]])) $_SESSION["preview-settings"]["display_scale"] = $_POST["display_scale"];
+	if (isset($_POST["custom_scale"]) && is_numeric($_POST["custom_scale"])) $_SESSION["preview-settings"]["custom_scale"] = max(50, min(400, intval($_POST["custom_scale"])));
 	if (isset($_POST["word_wrap"]) && in_array($_POST["word_wrap"], array("off", "on"))) $_SESSION["preview-settings"]["word_wrap"] = $_POST["word_wrap"];
 	if (isset($_POST["pixelate"]) && in_array($_POST["pixelate"], array("off", "on"))) $_SESSION["preview-settings"]["pixelate"] = $_POST["pixelate"];
 	if (isset($_POST["output_pixelate"]) && in_array($_POST["output_pixelate"], array("off", "on"))) $_SESSION["preview-settings"]["output_pixelate"] = $_POST["output_pixelate"];
@@ -136,18 +140,20 @@ $selected_foreground = $_SESSION["preview-settings"]["foreground"];
 $selected_vertical = $_SESSION["preview-settings"]["vertical"];
 $selected_horizontal = $_SESSION["preview-settings"]["horizontal"];
 $selected_size_mode = $_SESSION["preview-settings"]["size_mode"];
-if ($selected_device != "m5stickcplus" && $selected_size_mode == "actual") {
-	$selected_size_mode = "comfortable";
+if ($selected_device != "m5stickcplus" && $selected_size_mode == "physical") {
+	$selected_size_mode = "half";
 	$_SESSION["preview-settings"]["size_mode"] = $selected_size_mode;
 }
 $selected_display_scale = $_SESSION["preview-settings"]["display_scale"];
+$selected_custom_scale = $_SESSION["preview-settings"]["custom_scale"];
 $selected_word_wrap = $_SESSION["preview-settings"]["word_wrap"];
 $selected_pixelate = $_SESSION["preview-settings"]["pixelate"];
 $selected_output_pixelate = $_SESSION["preview-settings"]["output_pixelate"];
 $selected_rotation = $_SESSION["preview-settings"]["rotation"];
 $physical_scale = $display_scales[$selected_display_scale]["scale"];
-$use_physical_size = ($selected_device == "m5stickcplus" && $selected_size_mode == "actual");
-$device_scale = ($selected_size_mode == "large") ? 1.0 : 0.5;
+if ($selected_display_scale == "custom") $physical_scale = $selected_custom_scale / 100;
+$use_physical_size = ($selected_device == "m5stickcplus" && $selected_size_mode == "physical");
+$device_scale = ($selected_size_mode == "full") ? 1.0 : 0.5;
 $rotation = intval($selected_rotation);
 $frame_width_raw = $devices[$selected_device]["frame_width"];
 $frame_height_raw = $devices[$selected_device]["frame_height"];
@@ -333,7 +339,7 @@ if (isset($_POST["submit-file"])) {
 			vertical-align: top;
 		}
 		table {
-			width: 960px;
+			width: 1000px;
 		}
 		td#first {
 			margin: 0px;
@@ -369,17 +375,50 @@ if (isset($_POST["submit-file"])) {
 			width: 270px;
 		}
 		td#third {
-			width: 210px;
+			width: 480px;
+		}
+		.controls-grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 16px 24px;
+			align-items: start;
+		}
+		.control-group {
+			border: 1px solid #333333;
+			border-radius: 6px;
+			padding: 10px 12px;
+		}
+		.control-group h3 {
+			margin-top: 0;
+			margin-bottom: 10px;
+		}
+		.control-group.span-2 {
+			grid-column: 1 / -1;
+		}
+		.control-row {
+			margin-bottom: 8px;
+		}
+		.control-row:last-child {
+			margin-bottom: 0;
+		}
+		.control-label {
+			display: block;
+			margin-bottom: 4px;
 		}
 		#textfield {
-			width: 66%;
+			width: 100%;
 			height: 8em;
+			box-sizing: border-box;
 		}
 		#background, #foreground {
 			width: 120px;
 		}
 		#sizefield {
 			width: 35px;
+			text-align: center;
+		}
+		#custom-scale {
+			width: 50px;
 			text-align: center;
 		}
 		#get-font {
@@ -406,12 +445,6 @@ if (isset($_POST["submit-file"])) {
 		</tr>
 
 		<tr>
-			<td id="first">
-				<div id="device-frame">
-					<img id="device-background" src="<?php echo $devices[$selected_device]["image"]; ?>">
-					<img id="image" src="image.php">
-				</div>
-			</td>
 			<td id="second">
 			
 				<form action="" method="post" enctype="multipart/form-data">
@@ -445,125 +478,138 @@ if (isset($_POST["submit-file"])) {
 				<input type="submit" value="Upload" name="submit-file" onClick="return validateUpload();"> <input type="file" name="fileToUpload" id="fileToUpload"> 
 			</td>
 			<td id="third">
-				<h3>Device</h3>
-				<select name="device" id="device" onChange="updateDevice()">
-					<?php
-						foreach ($devices as $device_id => $device) {
-							$selected = ($device_id == $selected_device) ? " selected" : "";
-							echo "<option value=\"$device_id\"$selected>" . $device["name"] . " (" . $device["width"] . "x" . $device["height"] . ")</option>\n";
-						}
-					?>
-				</select>
+				<div class="controls-grid">
 
-				&nbsp;<br>
-				&nbsp;<br>
+					<div class="control-group">
+						<h3>Device</h3>
+						<div class="control-row">
+							<select name="device" id="device" onChange="updateDevice()">
+								<?php
+									foreach ($devices as $device_id => $device) {
+										$selected = ($device_id == $selected_device) ? " selected" : "";
+										echo "<option value=\"$device_id\"$selected>" . $device["name"] . " (" . $device["width"] . "x" . $device["height"] . ")</option>\n";
+									}
+								?>
+							</select>
+						</div>
+						<div class="control-row">
+							<input type="button" id="rotate-button" value="Rotate <?php echo $selected_rotation; ?> deg" onClick="rotateDevice()">
+							<input type="hidden" id="rotation" value="<?php echo $selected_rotation; ?>">
+						</div>
+					</div>
 
-				Size<br>
-				<select name="size-mode" id="size-mode" onChange="savePreviewSettings(true)">
-					<option value="comfortable"<?php if ($selected_size_mode == "comfortable") echo " selected"; ?>>Comfortable (50%)</option>
-					<option value="large"<?php if ($selected_size_mode == "large") echo " selected"; ?>>Large (100%)</option>
-					<option value="actual"<?php if ($selected_size_mode == "actual") echo " selected"; ?><?php if ($selected_device != "m5stickcplus") echo " disabled"; ?>>Actual physical size</option>
-				</select>
+					<div class="control-group">
+						<h3>Image Size</h3>
+						<div class="control-row">
+							<select name="size-mode" id="size-mode" onChange="savePreviewSettings(true)">
+								<option value="half"<?php if ($selected_size_mode == "half") echo " selected"; ?>>Half (50%)</option>
+								<option value="full"<?php if ($selected_size_mode == "full") echo " selected"; ?>>Full (100%)</option>
+								<option value="physical"<?php if ($selected_size_mode == "physical") echo " selected"; ?><?php if ($selected_device != "m5stickcplus") echo " disabled"; ?>>Match physical size</option>
+							</select>
+						</div>
+						<div class="control-row">
+							<span class="control-label">Display</span>
+							<select name="display-scale" id="display-scale" onChange="savePreviewSettings(true)"<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "physical") echo " disabled"; ?>>
+								<?php
+									foreach ($display_scales as $display_id => $display) {
+										$selected = ($display_id == $selected_display_scale) ? " selected" : "";
+										$label = ($display_id == "custom") ? $display["name"] : $display["name"] . " (" . intval($display["scale"] * 100) . "%)";
+										echo "<option value=\"$display_id\"$selected>" . $label . "</option>\n";
+									}
+								?>
+							</select>
+						</div>
+						<div class="control-row">
+							<input type="text" name="custom-scale" id="custom-scale" value="<?php echo $selected_custom_scale; ?>" onChange="savePreviewSettings(true)"<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "physical" || $selected_display_scale != "custom") echo " disabled"; ?>> %
+						</div>
+					</div>
 
-				&nbsp;<br>
-				&nbsp;<br>
+					<div class="control-group">
+						<h3>Font Size</h3>
+						<div class="control-row">
+							<input type="text" name="size" id="sizefield" value="20" onInput="updateImage()"> points
+						</div>
+					</div>
 
-				Display<br>
-				<select name="display-scale" id="display-scale" onChange="savePreviewSettings(true)"<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "actual") echo " disabled"; ?>>
-					<?php
-						foreach ($display_scales as $display_id => $display) {
-							$selected = ($display_id == $selected_display_scale) ? " selected" : "";
-							echo "<option value=\"$display_id\"$selected>" . $display["name"] . " (" . intval($display["scale"] * 100) . "%)</option>\n";
-						}
-					?>
-				</select>
+					<div class="control-group">
+						<h3>Colours</h3>
+						<div class="control-row">
+							<span class="control-label">Background</span>
+							<select name="background" id="background" onChange="updatePreviewSettings()">
+								<?php
+									foreach ($colors as $color_id => $color) {
+										$selected = ($color_id == $selected_background) ? " selected" : "";
+										echo "<option value=\"$color_id\"$selected>" . $color["name"] . "</option>\n";
+									}
+								?>
+							</select>
+						</div>
+						<div class="control-row">
+							<span class="control-label">Foreground</span>
+							<select name="foreground" id="foreground" onChange="updatePreviewSettings()">
+								<?php
+									foreach ($colors as $color_id => $color) {
+										$selected = ($color_id == $selected_foreground) ? " selected" : "";
+										echo "<option value=\"$color_id\"$selected>" . $color["name"] . "</option>\n";
+									}
+								?>
+							</select>
+						</div>
+					</div>
 
-				&nbsp;<br>
-				&nbsp;<br>
+					<div class="control-group span-2">
+						<h3>Preview Text</h3>
+						<div class="control-row">
+							<textarea name="text" id="textfield" rows="8" onInput="updateImage()">Testing 123...</textarea>
+						</div>
+						<div class="control-row">
+							<input type="checkbox" id="word-wrap" value="on" onChange="updatePreviewSettings()"<?php if ($selected_word_wrap == "on") echo " checked"; ?>> Word wrap
+						</div>
+						<div class="control-row">
+							<input type="button" id="pixelate-button" value="<?php echo ($selected_pixelate == "on") ? "Smooth preview" : "Pixelate preview"; ?>" onClick="togglePixelate()">
+							<input type="hidden" id="pixelate" value="<?php echo $selected_pixelate; ?>">
+						</div>
+						<div class="control-row">
+							<input type="checkbox" id="output-pixelate" value="on" onChange="updatePreviewSettings()"<?php if ($selected_output_pixelate == "on") echo " checked"; ?>> Pixel-lock output
+						</div>
+					</div>
 
-				<input type="button" id="rotate-button" value="Rotate <?php echo $selected_rotation; ?> deg" onClick="rotateDevice()">
-				<input type="hidden" id="rotation" value="<?php echo $selected_rotation; ?>">
+					<div class="control-group span-2">
+						<h3>Position</h3>
+						<div class="control-row">
+							<span class="control-label">Vertical</span>
+							<?php
+								foreach ($vertical_positions as $position_id => $position_name) {
+									$checked = ($position_id == $selected_vertical) ? " checked" : "";
+									echo "<input type=\"radio\" name=\"vertical\" value=\"$position_id\"$checked onChange=\"updatePreviewSettings()\"> $position_name &nbsp; ";
+								}
+							?>
+						</div>
+						<div class="control-row">
+							<span class="control-label">Horizontal</span>
+							<?php
+								foreach ($horizontal_positions as $position_id => $position_name) {
+									$checked = ($position_id == $selected_horizontal) ? " checked" : "";
+									echo "<input type=\"radio\" name=\"horizontal\" value=\"$position_id\"$checked onChange=\"updatePreviewSettings()\"> $position_name &nbsp; ";
+								}
+							?>
+						</div>
+					</div>
 
-				&nbsp;<br>
-				&nbsp;<br>
+					<div class="control-group span-2">
+						<input type="submit" id="get-font" value="Get GFX font file" name="get-font">
+					</div>
 
-				<h3>Font Size</h3>
-				<input type="text" name="size" id="sizefield" value="20" onInput="updateImage()"> points
-				
-				&nbsp;<br>
-				&nbsp;<br>
+				</div>
 
-				<h3>Demo text</h3>
-				<textarea name="text" id="textfield" rows="8" onInput="updateImage()">Testing 123...</textarea>
-
-				&nbsp;<br>
-				<input type="checkbox" id="word-wrap" value="on" onChange="updatePreviewSettings()"<?php if ($selected_word_wrap == "on") echo " checked"; ?>> Word wrap
-
-				&nbsp;<br>
-				<input type="button" id="pixelate-button" value="<?php echo ($selected_pixelate == "on") ? "Smooth preview" : "Pixelate preview"; ?>" onClick="togglePixelate()">
-				<input type="hidden" id="pixelate" value="<?php echo $selected_pixelate; ?>">
-
-				&nbsp;<br>
-				<input type="checkbox" id="output-pixelate" value="on" onChange="updatePreviewSettings()"<?php if ($selected_output_pixelate == "on") echo " checked"; ?>> Pixel-lock output
-
-				&nbsp;<br>
-				&nbsp;<br>
-
-				<h3>Colours</h3>
-				Background<br>
-				<select name="background" id="background" onChange="updatePreviewSettings()">
-					<?php
-						foreach ($colors as $color_id => $color) {
-							$selected = ($color_id == $selected_background) ? " selected" : "";
-							echo "<option value=\"$color_id\"$selected>" . $color["name"] . "</option>\n";
-						}
-					?>
-				</select>
-
-				&nbsp;<br>
-				&nbsp;<br>
-
-				Foreground<br>
-				<select name="foreground" id="foreground" onChange="updatePreviewSettings()">
-					<?php
-						foreach ($colors as $color_id => $color) {
-							$selected = ($color_id == $selected_foreground) ? " selected" : "";
-							echo "<option value=\"$color_id\"$selected>" . $color["name"] . "</option>\n";
-						}
-					?>
-				</select>
-
-				&nbsp;<br>
-				&nbsp;<br>
-
-				<h3>Position</h3>
-				Vertical<br>
-				<?php
-					foreach ($vertical_positions as $position_id => $position_name) {
-						$checked = ($position_id == $selected_vertical) ? " checked" : "";
-						echo "<input type=\"radio\" name=\"vertical\" value=\"$position_id\"$checked onChange=\"updatePreviewSettings()\"> $position_name<br>\n";
-					}
-				?>
-
-				&nbsp;<br>
-
-				Horizontal<br>
-				<?php
-					foreach ($horizontal_positions as $position_id => $position_name) {
-						$checked = ($position_id == $selected_horizontal) ? " checked" : "";
-						echo "<input type=\"radio\" name=\"horizontal\" value=\"$position_id\"$checked onChange=\"updatePreviewSettings()\"> $position_name<br>\n";
-					}
-				?>
-				
-				&nbsp;<br>
-				&nbsp;<br>
-				&nbsp;<br>
-				&nbsp;<br>
-				
-				<input type="submit" id="get-font" value="Get GFX font file" name="get-font">
-				
 				</form>
 				
+			</td>
+			<td id="first">
+				<div id="device-frame">
+					<img id="device-background" src="<?php echo $devices[$selected_device]["image"]; ?>">
+					<img id="image" src="image.php">
+				</div>
 			</td>
 		</tr>
 		
@@ -580,7 +626,7 @@ if (isset($_POST["submit-file"])) {
 
 <h3>The size thing</h3>
 
-<p>Font sizes are given in points, where a point is 1/72 of an inch, describing the actual size on a display. Or that's what it's supposed to mean, but pretty much everyone that uses the Adafruit software keeps the setting of 141 pixels per inch. In the Adafruit software it says:</p>
+<p>Font sizes are given in points, where a point is 1/72 of an inch, describing the physical size on a display. Or that's what it's supposed to mean, but pretty much everyone that uses the Adafruit software keeps the setting of 141 pixels per inch. In the Adafruit software it says:</p>
 
 <blockquote><code>#define DPI 141 // Approximate res. of Adafruit 2.8" TFT </code></blockquote>
 
@@ -675,7 +721,7 @@ void loop() {
 					updateImage();
 				}
 			};
-			request.send("set-preview-settings=1&background=" + encodeURIComponent(background()) + "&foreground=" + encodeURIComponent(foreground()) + "&vertical=" + encodeURIComponent(vertical()) + "&horizontal=" + encodeURIComponent(horizontal()) + "&size_mode=" + encodeURIComponent(sizeMode()) + "&display_scale=" + encodeURIComponent(displayScale()) + "&word_wrap=" + encodeURIComponent(wordWrap()) + "&pixelate=" + encodeURIComponent(pixelate()) + "&output_pixelate=" + encodeURIComponent(outputPixelate()) + "&rotation=" + encodeURIComponent(rotation()));
+			request.send("set-preview-settings=1&background=" + encodeURIComponent(background()) + "&foreground=" + encodeURIComponent(foreground()) + "&vertical=" + encodeURIComponent(vertical()) + "&horizontal=" + encodeURIComponent(horizontal()) + "&size_mode=" + encodeURIComponent(sizeMode()) + "&display_scale=" + encodeURIComponent(displayScale()) + "&custom_scale=" + encodeURIComponent(customScale()) + "&word_wrap=" + encodeURIComponent(wordWrap()) + "&pixelate=" + encodeURIComponent(pixelate()) + "&output_pixelate=" + encodeURIComponent(outputPixelate()) + "&rotation=" + encodeURIComponent(rotation()));
 		}
 
 		function background() {
@@ -692,6 +738,16 @@ void loop() {
 
 		function displayScale() {
 			return document.getElementById("display-scale").value;
+		}
+
+		function customScale() {
+			var field = document.getElementById("custom-scale");
+			var value = parseInt(field.value, 10);
+			if (isNaN(value)) value = 100;
+			if (value > 400) value = 400;
+			if (value < 50) value = 50;
+			field.value = value;
+			return value;
 		}
 
 		function wordWrap() {
