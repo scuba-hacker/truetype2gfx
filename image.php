@@ -60,21 +60,6 @@ if (isset($_GET["pixelate"]) && $_GET["pixelate"] === "on") {
     $pixelate = true;
 }
 
-$output_pixelate = false;
-if (isset($_GET["output_pixelate"]) && $_GET["output_pixelate"] === "on") {
-    $output_pixelate = true;
-}
-
-$output_width = 0;
-if (isset($_GET["output_width"]) && is_numeric($_GET["output_width"])) {
-    $output_width = intval($_GET["output_width"]);
-}
-
-$output_height = 0;
-if (isset($_GET["output_height"]) && is_numeric($_GET["output_height"])) {
-    $output_height = intval($_GET["output_height"]);
-}
-
 $rotation = "0";
 if (isset($_GET["rotation"]) && in_array($_GET["rotation"], array("0", "90", "180", "270"))) {
     $rotation = $_GET["rotation"];
@@ -94,7 +79,7 @@ if (isset($_GET["dpi"]) && is_numeric($_GET["dpi"]) && $_GET["dpi"] > 0 && $_GET
     $dpi = intval($_GET["dpi"]);
 }
 
-$text = 'Testing 123...';
+$text = '';
 if (isset($_GET["text"])) {
     $text = htmlspecialchars($_GET["text"], ENT_QUOTES, 'UTF-8');
     if (strlen($text) > 100) $text = substr($text, 0, 100);
@@ -288,13 +273,6 @@ if ($pixelate) {
         }
     }
     imagedestroy($mask);
-}
-
-if ($output_pixelate && $output_width > 0 && $output_width <= 2000 && $output_height > 0 && $output_height <= 2000 && ($output_width != imagesx($im) || $output_height != imagesy($im))) {
-    $scaled = imagecreatetruecolor($output_width, $output_height);
-    imagecopyresized($scaled, $im, 0, 0, 0, 0, $output_width, $output_height, imagesx($im), imagesy($im));
-    imagedestroy($im);
-    $im = $scaled;
 }
 
 // Using imagepng() results in clearer text compared with imagejpeg()

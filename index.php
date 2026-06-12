@@ -87,7 +87,7 @@ if (isset($_POST["set-device"])) {
 $selected_device = $_SESSION['device'];
 
 $settings_state_file = "fonts/user/.preview-settings.json";
-$preview_settings = array("background" => "white", "foreground" => "black", "vertical" => "centre", "horizontal" => "centre", "size_mode" => "half", "display_scale" => "standard", "custom_scale" => 100, "word_wrap" => "off", "pixelate" => "off", "output_pixelate" => "off", "rotation" => "0");
+$preview_settings = array("background" => "white", "foreground" => "black", "vertical" => "centre", "horizontal" => "centre", "size_mode" => "half", "display_scale" => "standard", "custom_scale" => 100, "word_wrap" => "off", "pixelate" => "off", "rotation" => "0");
 if (file_exists($settings_state_file)) {
 	$saved_settings = json_decode(file_get_contents($settings_state_file), true);
 	if (is_array($saved_settings)) {
@@ -98,10 +98,9 @@ if (file_exists($settings_state_file)) {
 		if (isset($saved_settings["size_mode"]) && in_array($saved_settings["size_mode"], array("half", "full", "physical"))) $preview_settings["size_mode"] = $saved_settings["size_mode"];
 		if (isset($saved_settings["physical_size"]) && $saved_settings["physical_size"] == "on") $preview_settings["size_mode"] = "physical";
 		if (isset($saved_settings["display_scale"]) && isset($display_scales[$saved_settings["display_scale"]])) $preview_settings["display_scale"] = $saved_settings["display_scale"];
-		if (isset($saved_settings["custom_scale"]) && is_numeric($saved_settings["custom_scale"])) $preview_settings["custom_scale"] = max(50, min(400, intval($saved_settings["custom_scale"])));
+		if (isset($saved_settings["custom_scale"]) && is_numeric($saved_settings["custom_scale"])) $preview_settings["custom_scale"] = max(50, min(1000, intval($saved_settings["custom_scale"])));
 		if (isset($saved_settings["word_wrap"]) && in_array($saved_settings["word_wrap"], array("off", "on"))) $preview_settings["word_wrap"] = $saved_settings["word_wrap"];
 		if (isset($saved_settings["pixelate"]) && in_array($saved_settings["pixelate"], array("off", "on"))) $preview_settings["pixelate"] = $saved_settings["pixelate"];
-		if (isset($saved_settings["output_pixelate"]) && in_array($saved_settings["output_pixelate"], array("off", "on"))) $preview_settings["output_pixelate"] = $saved_settings["output_pixelate"];
 		if (isset($saved_settings["rotation"]) && in_array($saved_settings["rotation"], array("0", "90", "180", "270"))) $preview_settings["rotation"] = $saved_settings["rotation"];
 	}
 }
@@ -113,10 +112,9 @@ if (!isset($vertical_positions[$_SESSION["preview-settings"]["vertical"]])) $_SE
 if (!isset($horizontal_positions[$_SESSION["preview-settings"]["horizontal"]])) $_SESSION["preview-settings"]["horizontal"] = $preview_settings["horizontal"];
 if (!isset($_SESSION["preview-settings"]["size_mode"]) || !in_array($_SESSION["preview-settings"]["size_mode"], array("half", "full", "physical"))) $_SESSION["preview-settings"]["size_mode"] = $preview_settings["size_mode"];
 if (!isset($_SESSION["preview-settings"]["display_scale"]) || !isset($display_scales[$_SESSION["preview-settings"]["display_scale"]])) $_SESSION["preview-settings"]["display_scale"] = $preview_settings["display_scale"];
-if (!isset($_SESSION["preview-settings"]["custom_scale"]) || !is_numeric($_SESSION["preview-settings"]["custom_scale"]) || $_SESSION["preview-settings"]["custom_scale"] < 50 || $_SESSION["preview-settings"]["custom_scale"] > 400) $_SESSION["preview-settings"]["custom_scale"] = $preview_settings["custom_scale"];
+if (!isset($_SESSION["preview-settings"]["custom_scale"]) || !is_numeric($_SESSION["preview-settings"]["custom_scale"]) || $_SESSION["preview-settings"]["custom_scale"] < 50 || $_SESSION["preview-settings"]["custom_scale"] > 1000) $_SESSION["preview-settings"]["custom_scale"] = $preview_settings["custom_scale"];
 if (!isset($_SESSION["preview-settings"]["word_wrap"]) || !in_array($_SESSION["preview-settings"]["word_wrap"], array("off", "on"))) $_SESSION["preview-settings"]["word_wrap"] = $preview_settings["word_wrap"];
 if (!isset($_SESSION["preview-settings"]["pixelate"]) || !in_array($_SESSION["preview-settings"]["pixelate"], array("off", "on"))) $_SESSION["preview-settings"]["pixelate"] = $preview_settings["pixelate"];
-if (!isset($_SESSION["preview-settings"]["output_pixelate"]) || !in_array($_SESSION["preview-settings"]["output_pixelate"], array("off", "on"))) $_SESSION["preview-settings"]["output_pixelate"] = $preview_settings["output_pixelate"];
 if (!isset($_SESSION["preview-settings"]["rotation"]) || !in_array($_SESSION["preview-settings"]["rotation"], array("0", "90", "180", "270"))) $_SESSION["preview-settings"]["rotation"] = $preview_settings["rotation"];
 
 if (isset($_POST["set-preview-settings"])) {
@@ -126,10 +124,9 @@ if (isset($_POST["set-preview-settings"])) {
 	if (isset($_POST["horizontal"]) && isset($horizontal_positions[$_POST["horizontal"]])) $_SESSION["preview-settings"]["horizontal"] = $_POST["horizontal"];
 	if (isset($_POST["size_mode"]) && in_array($_POST["size_mode"], array("half", "full", "physical"))) $_SESSION["preview-settings"]["size_mode"] = $_POST["size_mode"];
 	if (isset($_POST["display_scale"]) && isset($display_scales[$_POST["display_scale"]])) $_SESSION["preview-settings"]["display_scale"] = $_POST["display_scale"];
-	if (isset($_POST["custom_scale"]) && is_numeric($_POST["custom_scale"])) $_SESSION["preview-settings"]["custom_scale"] = max(50, min(400, intval($_POST["custom_scale"])));
+	if (isset($_POST["custom_scale"]) && is_numeric($_POST["custom_scale"])) $_SESSION["preview-settings"]["custom_scale"] = max(50, min(1000, intval($_POST["custom_scale"])));
 	if (isset($_POST["word_wrap"]) && in_array($_POST["word_wrap"], array("off", "on"))) $_SESSION["preview-settings"]["word_wrap"] = $_POST["word_wrap"];
 	if (isset($_POST["pixelate"]) && in_array($_POST["pixelate"], array("off", "on"))) $_SESSION["preview-settings"]["pixelate"] = $_POST["pixelate"];
-	if (isset($_POST["output_pixelate"]) && in_array($_POST["output_pixelate"], array("off", "on"))) $_SESSION["preview-settings"]["output_pixelate"] = $_POST["output_pixelate"];
 	if (isset($_POST["rotation"]) && in_array($_POST["rotation"], array("0", "90", "180", "270"))) $_SESSION["preview-settings"]["rotation"] = $_POST["rotation"];
 	file_put_contents($settings_state_file, json_encode($_SESSION["preview-settings"]));
 	exit();
@@ -148,7 +145,6 @@ $selected_display_scale = $_SESSION["preview-settings"]["display_scale"];
 $selected_custom_scale = $_SESSION["preview-settings"]["custom_scale"];
 $selected_word_wrap = $_SESSION["preview-settings"]["word_wrap"];
 $selected_pixelate = $_SESSION["preview-settings"]["pixelate"];
-$selected_output_pixelate = $_SESSION["preview-settings"]["output_pixelate"];
 $selected_rotation = $_SESSION["preview-settings"]["rotation"];
 $physical_scale = $display_scales[$selected_display_scale]["scale"];
 if ($selected_display_scale == "custom") $physical_scale = $selected_custom_scale / 100;
@@ -198,8 +194,6 @@ $screen_left = intval($rotated_screen_left_raw * $device_scale);
 $screen_top = intval($rotated_screen_top_raw * $device_scale);
 $screen_width = intval($rotated_screen_width_raw * $device_scale);
 $screen_height = intval($rotated_screen_height_raw * $device_scale);
-$output_width = $screen_width;
-$output_height = $screen_height;
 $background_width = intval($frame_width_raw * $device_scale);
 $background_height = intval($frame_height_raw * $device_scale);
 $background_left = intval(($frame_width - $background_width) / 2);
@@ -322,35 +316,308 @@ if (isset($_POST["submit-file"])) {
 	<title>truetype2gfx - Converting fonts from TrueType to Adafruit GFX</title>
 
 	<style>
+		/*
+		 * Theme token system (ThemeTokens model — see design.md "Data Models").
+		 * All component colour/spacing/shape/motion values derive from these tokens;
+		 * no hard-coded literals should live outside this :root block.
+		 * Body text (--color-text) on the app background (--color-bg) measures ~16:1,
+		 * comfortably exceeding the WCAG AA 4.5:1 minimum for body text.
+		 */
+		:root {
+			/* Colour — dark, modern surface palette with a single vibrant accent */
+			--color-bg: #0d1117;             /* app background (deep neutral) */
+			--color-surface: #161b22;        /* card/panel background */
+			--color-surface-raised: #1c2230; /* elevated surface */
+			--color-border: #30363d;         /* subtle borders */
+			--color-text: #e6edf3;           /* primary text */
+			--color-text-muted: #9da7b3;     /* secondary text */
+			--color-accent: #4f9cf9;         /* brand/interactive accent */
+			--color-accent-text: #0a0f16;    /* text on accent */
+			--color-focus: #58a6ff;          /* focus ring */
+			--color-danger: #f85149;         /* delete/destructive */
+
+			/* Typography */
+			--font-sans: "Segoe UI", Roboto, Helvetica, Arial, system-ui, sans-serif;
+			--font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+			--font-size-xs: 0.75rem;
+			--font-size-sm: 0.875rem;
+			--font-size-md: 1rem;
+			--font-size-lg: 1.25rem;
+			--font-size-xl: 1.75rem;
+			--line-height: 1.5;
+
+			/* Spacing scale */
+			--space-1: 4px;
+			--space-2: 8px;
+			--space-3: 12px;
+			--space-4: 16px;
+			--space-5: 24px;
+			--space-6: 32px;
+			--space-7: 48px;
+
+			/* Shape */
+			--radius: 8px;
+			--radius-sm: 4px;
+
+			/* Elevation */
+			--shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+			--shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.35);
+
+			/* Motion */
+			--transition-fast: 100ms ease;
+			--transition-base: 200ms ease;
+		}
 		body {
-			background-color: #000000;
-			color: #ffffff;
-			margin: 100px;
-			margin-top: 100px;
-			margin-left: 100px;
-			font-family: Verdana, sans-serif;
+			background-color: var(--color-bg);
+			color: var(--color-text);
+			margin: 0;
+			font-family: var(--font-sans);
+			line-height: var(--line-height);
+		}
+		/*
+		 * App Shell (see design.md "Component: App Shell").
+		 * Root container that centres page content within a max width and applies
+		 * page padding that scales with the viewport across breakpoints.
+		 */
+		.app-shell {
+			max-width: 1600px;
+			margin: 0 auto;
+			padding: var(--space-6);
+		}
+		/* Header brand bar: product name + tagline */
+		.app-header {
+			margin-bottom: var(--space-6);
+			padding-bottom: var(--space-4);
+			border-bottom: 1px solid var(--color-border);
+		}
+		.app-brand-name {
+			margin: 0;
+			font-size: var(--font-size-xl);
+			color: var(--color-text);
+		}
+		.app-brand-tagline {
+			margin: var(--space-2) 0 0;
+			font-size: var(--font-size-md);
+			color: var(--color-text-muted);
 		}
 		a {
 			text-decoration: none;
 			font-weight: bold;
-			color: #8080FF;
+			color: var(--color-accent);
 		}
-		td {
-			vertical-align: top;
+		/*
+		 * Fixed desktop layout. Three zones in a single row: Font Library (left,
+		 * fixed width), Controls (centre, flexible), Live Preview (right, sized to
+		 * the device's natural width). Flexbox never overlaps items, so the
+		 * preview can never paint over the controls. No responsive breakpoints.
+		 */
+		.workspace {
+			display: flex;
+			gap: var(--space-6);
+			align-items: flex-start;
 		}
-		table {
-			width: 1000px;
+		/*
+		 * The <form> wraps the Library + Controls zones in the DOM while the
+		 * Preview zone is a sibling. display:contents removes the form's own box
+		 * from the layout so its children (zone-library, zone-controls) become
+		 * direct participants in the workspace flex row — all without altering the
+		 * DOM structure, form submission, or any id/name/handler hooks.
+		 */
+		.workspace > form {
+			display: contents;
 		}
-		td#first {
-			margin: 0px;
-			width: <?php echo $frame_width; ?>;
-			height: <?php echo $frame_height; ?>;
+		.zone-library {
+			flex: 0 0 240px;
+		}
+		/* Explicit metrics on the FreeFonts heading so the other zones can be
+		 * offset to line up with the first font row. */
+		.zone-library h3:first-child {
+			margin-top: 0;
+			margin-bottom: var(--space-3);
+			font-size: var(--font-size-md);
+			line-height: var(--line-height);
+		}
+		.zone-controls {
+			flex: 0 0 auto;
+			min-width: 0;
+			margin-top: calc(var(--font-size-md) * var(--line-height) + var(--space-3));
+		}
+		.zone-preview {
+			flex: 0 0 auto;
+			margin-top: calc(var(--font-size-md) * var(--line-height) + var(--space-3));
+		}
+		/* Info / documentation section sits below the workspace */
+		.info-section {
+			margin-top: var(--space-7);
+			padding-top: var(--space-5);
+			border-top: 1px solid var(--color-border);
+			max-width: 70ch;
+		}
+		.info-section h3 {
+			color: var(--color-text);
+			margin-top: var(--space-6);
+		}
+		.info-section p {
+			color: var(--color-text);
+		}
+		.info-section blockquote {
+			margin: var(--space-4) 0;
+			padding: var(--space-3) var(--space-4);
+			border-left: 3px solid var(--color-accent);
+			background-color: var(--color-surface);
+			border-radius: var(--radius-sm);
+		}
+		.info-section code,
+		.info-section pre {
+			font-family: var(--font-mono);
+			font-size: var(--font-size-sm);
+		}
+		.info-section img {
+			max-width: 100%;
+			height: auto;
+		}
+		/*
+		 * Font Library list (see design.md "Component: Font Library Panel").
+		 * Each font is a labelled, fully-clickable selectable row. The radio
+		 * input is preserved verbatim (name="font", original value, the
+		 * FreeSans.ttf checked default, and onChange="updateImage()") for
+		 * contract stability; the wrapping <label> supplies the accessible name
+		 * and makes the whole row a hit target. The active row is indicated via
+		 * :has(input:checked) using the accent token.
+		 */
+		.font-list {
+			margin: 0 0 var(--space-4);
+			padding: 0;
+			display: flex;
+			flex-direction: column;
+			gap: var(--space-1);
+		}
+		.font-row {
+			display: flex;
+			align-items: center;
+			gap: var(--space-2);
+			padding: var(--space-2) var(--space-3);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-sm);
+			background-color: var(--color-surface);
+			cursor: pointer;
+			transition: background-color var(--transition-fast), border-color var(--transition-fast);
+		}
+		.font-row:hover {
+			background-color: var(--color-surface-raised);
+			border-color: var(--color-accent);
+		}
+		/* Selected-state indication on the currently active font row (2A.4) */
+		.font-row:has(input[name="font"]:checked) {
+			border-color: var(--color-accent);
+			background-color: var(--color-surface-raised);
+			box-shadow: inset 3px 0 0 var(--color-accent);
+		}
+		.font-row:focus-within {
+			border-color: var(--color-focus);
+			box-shadow: 0 0 0 2px var(--color-focus);
+		}
+		.font-row input[type="radio"] {
+			accent-color: var(--color-accent);
+			margin: 0;
+			flex: 0 0 auto;
+		}
+		/* User-font rows pair a clickable select area with the delete button */
+		.font-row--user {
+			cursor: default;
+		}
+		.font-row-select {
+			display: flex;
+			align-items: center;
+			gap: var(--space-2);
+			flex: 1 1 auto;
+			min-width: 0;
+			cursor: pointer;
+		}
+		.font-name {
+			flex: 1 1 auto;
+			min-width: 0;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+		/*
+		 * Per-row delete button (Requirement 4.2): danger-tokened and kept
+		 * visually quiet until the row is hovered or the button is focused.
+		 */
+		.font-delete {
+			flex: 0 0 auto;
+			border: 1px solid transparent;
+			border-radius: var(--radius-sm);
+			padding: var(--space-1) var(--space-2);
+			background: transparent;
+			color: var(--color-danger);
+			font: inherit;
+			line-height: 1;
+			cursor: pointer;
+			opacity: 0;
+			transition: opacity var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+		}
+		.font-row--user:hover .font-delete,
+		.font-row--user:focus-within .font-delete,
+		.font-delete:focus-visible {
+			opacity: 1;
+		}
+		.font-delete:hover {
+			border-color: var(--color-danger);
+			background-color: color-mix(in srgb, var(--color-danger) 12%, transparent);
+		}
+		.font-delete:focus-visible {
+			outline: none;
+			border-color: var(--color-focus);
+			box-shadow: 0 0 0 2px var(--color-focus);
+		}
+		/* Friendly empty-state when no custom fonts are present (Requirement 4.5) */
+		.font-empty-state {
+			margin: 0 0 var(--space-4);
+			padding: var(--space-3);
+			border: 1px dashed var(--color-border);
+			border-radius: var(--radius-sm);
+			color: var(--color-text-muted);
+			font-size: var(--font-size-md);
+			text-align: center;
+		}
+		/* Upload control (Requirement 3.1) styled consistently with the theme */
+		.upload-control {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: var(--space-2);
+			margin-bottom: var(--space-4);
+		}
+		.upload-control input[type="file"] {
+			flex: 1 1 auto;
+			min-width: 0;
+			color: var(--color-text-muted);
+			font-size: var(--font-size-md);
+		}
+		.upload-control input[type="file"]::file-selector-button {
+			padding: var(--space-3) var(--space-5);
+			margin-right: var(--space-3);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-sm);
+			background-color: var(--color-surface);
+			color: var(--color-text);
+			font-family: var(--font-sans);
+			font-size: var(--font-size-md);
+			cursor: pointer;
+			transition: background-color var(--transition-base),
+				border-color var(--transition-base);
+		}
+		.upload-control input[type="file"]::file-selector-button:hover {
+			background-color: var(--color-surface-raised);
+			border-color: var(--color-accent);
 		}
 		#device-frame {
 			position: relative;
 			width: <?php echo $frame_width; ?>;
 			height: <?php echo $frame_height; ?>;
-			overflow: visible;
+			overflow: hidden;
 		}
 		#device-background {
 			position: absolute;
@@ -371,123 +638,381 @@ if (isset($_POST["submit-file"])) {
 			image-rendering: <?php echo ($selected_pixelate == "on") ? "pixelated" : "auto"; ?>;
 			z-index: 2;
 		}
-		td#second {
-			width: 270px;
+		/* Preview Stage: framed, elevated, right-anchored (design.md "Live Preview Stage") */
+		.preview-stage {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: var(--space-3);
+			padding: var(--space-5);
+			background-color: var(--color-surface);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius);
+			box-shadow: var(--shadow);
 		}
-		td#third {
-			width: 480px;
+		#device-frame {
+			background-color: var(--color-bg);
 		}
+		.preview-status {
+			font-size: var(--font-size-sm);
+			color: var(--color-text-muted);
+			padding: var(--space-1) var(--space-3);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-sm);
+			background-color: var(--color-surface-raised);
+		}
+		/* Compositor-friendly loading affordance (opacity/transform only) */
+		.preview-loading {
+			position: absolute;
+			inset: 0;
+			z-index: 3;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity var(--transition-base);
+		}
+		.preview-loading.is-loading {
+			opacity: 1;
+		}
+		.preview-spinner {
+			width: 28px;
+			height: 28px;
+			border: 3px solid var(--color-border);
+			border-top-color: var(--color-accent);
+			border-radius: 50%;
+			animation: preview-spin 0.8s linear infinite;
+		}
+		@keyframes preview-spin {
+			to { transform: rotate(360deg); }
+		}
+		/* Error/placeholder state shown in place of a broken-image icon */
+		.preview-placeholder {
+			position: absolute;
+			inset: 0;
+			z-index: 4;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+			padding: var(--space-4);
+			color: var(--color-text-muted);
+			background-color: var(--color-surface-raised);
+		}
+		.preview-placeholder[hidden] {
+			display: none;
+		}
+		/* Inline upload notice replacing the alert() (task 8.2) */
+		.upload-notice {
+			margin-top: var(--space-2);
+			color: var(--color-danger);
+			font-size: var(--font-size-sm);
+		}
+		/*
+		 * Controls Panel (see design.md "Component: Controls Panel").
+		 * The settings are grouped into themed cards laid out on a responsive grid.
+		 * All spacing/colour/shape values derive from theme tokens.
+		 */
 		.controls-grid {
 			display: grid;
 			grid-template-columns: 1fr 1fr;
-			gap: 16px 24px;
-			align-items: start;
+			gap: var(--space-4) var(--space-5);
+			align-items: stretch;
+			width: max-content;
 		}
+		.card-device { grid-column: span 1; }
+		.card-size { grid-column: span 1; }
+		/*
+		 * Each setting group is a themed, bordered, rounded surface with a clear
+		 * heading and consistent internal spacing.
+		 */
 		.control-group {
-			border: 1px solid #333333;
-			border-radius: 6px;
-			padding: 10px 12px;
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius);
+			background-color: var(--color-surface);
+			padding: var(--space-4);
+			box-shadow: var(--shadow-sm);
 		}
 		.control-group h3 {
 			margin-top: 0;
-			margin-bottom: 10px;
+			margin-bottom: var(--space-3);
+			font-size: var(--font-size-md);
+			color: var(--color-text);
 		}
 		.control-group.span-2 {
 			grid-column: 1 / -1;
 		}
+		/* Two-column split: options (left) beside positioning (right) */
+		.options-split {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: var(--space-3) var(--space-5);
+			align-items: stretch;
+		}
+		.options-col {
+			display: flex;
+			flex-direction: column;
+		}
+		/* Push the download button to the bottom of its column so its bottom
+		 * lines up with the Horizontal radio row in the adjacent column. */
+		.options-col .control-row:last-child {
+			margin-top: auto;
+		}
 		.control-row {
-			margin-bottom: 8px;
+			margin-bottom: var(--space-3);
 		}
 		.control-row:last-child {
 			margin-bottom: 0;
 		}
 		.control-label {
 			display: block;
-			margin-bottom: 4px;
+			margin-bottom: var(--space-1);
+			font-size: var(--font-size-sm);
+			color: var(--color-text-muted);
+		}
+		/*
+		 * Consistently themed form controls inside the Controls Panel: selects,
+		 * text/number inputs and the textarea share surface/border/radius tokens
+		 * with a clear focus-visible ring using the focus token (Requirement 16.3).
+		 */
+		.zone-controls select,
+		.zone-controls input[type="text"],
+		.zone-controls input[type="number"],
+		.zone-controls textarea {
+			background-color: var(--color-surface-raised);
+			color: var(--color-text);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-sm);
+			padding: var(--space-2) var(--space-3);
+			font-family: var(--font-sans);
+			font-size: var(--font-size-md);
+			line-height: var(--line-height);
+			transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+		}
+		.zone-controls select:hover,
+		.zone-controls input[type="text"]:hover,
+		.zone-controls input[type="number"]:hover,
+		.zone-controls textarea:hover {
+			border-color: var(--color-accent);
+		}
+		.zone-controls select:focus-visible,
+		.zone-controls input[type="text"]:focus-visible,
+		.zone-controls input[type="number"]:focus-visible,
+		.zone-controls textarea:focus-visible {
+			outline: none;
+			border-color: var(--color-focus);
+			box-shadow: 0 0 0 2px var(--color-focus);
+		}
+		/* Toggle-style buttons (rotate / pixelate) use a secondary surface treatment. */
+		.zone-controls input[type="button"] {
+			padding: var(--space-2) var(--space-3);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-sm);
+			background-color: var(--color-surface-raised);
+			color: var(--color-text);
+			font-family: var(--font-sans);
+			font-size: var(--font-size-sm);
+			cursor: pointer;
+			transition: background-color var(--transition-fast), border-color var(--transition-fast);
+		}
+		.zone-controls input[type="button"]:hover {
+			background-color: var(--color-surface);
+			border-color: var(--color-accent);
+		}
+		.zone-controls input[type="button"]:focus-visible {
+			outline: none;
+			border-color: var(--color-focus);
+			box-shadow: 0 0 0 2px var(--color-focus);
+		}
+		.zone-controls input[type="checkbox"],
+		.zone-controls input[type="radio"] {
+			accent-color: var(--color-accent);
+		}
+		.zone-controls input[type="checkbox"]:focus-visible,
+		.zone-controls input[type="radio"]:focus-visible {
+			outline: 2px solid var(--color-focus);
+			outline-offset: 2px;
+		}
+		/* Inline checkbox / radio option labels make the whole option a hit target. */
+		.option-label {
+			display: inline-flex;
+			align-items: center;
+			gap: var(--space-2);
+			margin-right: var(--space-3);
+			cursor: pointer;
+		}
+		/*
+		 * Disabled styling for the Calibration_Controls (Requirement 7.5).
+		 * The size-mode "physical" option, the display-scale select and the
+		 * custom-scale input carry a server-rendered `disabled` attribute unless
+		 * the device is M5StickC-Plus and the size mode is physical (and, for
+		 * custom-scale, the display scale is custom). :disabled selectors give a
+		 * clear muted, reduced-opacity, not-allowed look so the controls read as
+		 * unavailable; the matching label is muted via the PHP-driven .is-disabled
+		 * class on its control-row.
+		 */
+		.zone-controls select:disabled,
+		.zone-controls input:disabled,
+		.zone-controls option:disabled {
+			opacity: 0.45;
+			cursor: not-allowed;
+			background-color: var(--color-surface);
+			color: var(--color-text-muted);
+			border-color: var(--color-border);
+		}
+		.control-row.is-disabled {
+			opacity: 0.6;
+		}
+		.control-row.is-disabled .control-label {
+			color: var(--color-text-muted);
 		}
 		#textfield {
 			width: 100%;
 			height: 8em;
 			box-sizing: border-box;
 		}
-		#background, #foreground {
-			width: 120px;
+		#background, #foreground, #device, #size-mode, #display-scale {
+			min-width: 140px;
 		}
 		#sizefield {
-			width: 35px;
+			width: 4em;
 			text-align: center;
 		}
 		#custom-scale {
-			width: 50px;
+			width: 4em;
 			text-align: center;
 		}
+		/*
+		 * Primary download action (Requirement 5.1, 5.3): the "Get GFX font file"
+		 * submit input is the prominent primary action. It uses the accent theme
+		 * tokens, full-width sizing, rounded corners, and clear hover/focus states
+		 * so it reads as visually distinct from the secondary Upload/Delete actions.
+		 */
 		#get-font {
-			width: 200px;
-			height: 30px;
-			font-size: 20px;
+			display: inline-block;
+			width: auto;
+			box-sizing: border-box;
+			padding: var(--space-3) var(--space-4);
+			border: 1px solid transparent;
+			border-radius: var(--radius);
+			background-color: var(--color-accent);
+			color: var(--color-accent-text);
+			font-family: var(--font-sans);
+			font-size: var(--font-size-lg);
 			font-weight: bold;
+			line-height: var(--line-height);
+			text-align: center;
+			cursor: pointer;
+			box-shadow: var(--shadow-sm);
+			transition: background-color var(--transition-base),
+				box-shadow var(--transition-base),
+				transform var(--transition-base);
+		}
+		#get-font:hover {
+			background-color: color-mix(in srgb, var(--color-accent) 85%, #fff);
+			box-shadow: var(--shadow);
+		}
+		#get-font:active {
+			transform: translateY(1px);
+		}
+		#get-font:focus-visible {
+			outline: none;
+			box-shadow: 0 0 0 3px var(--color-focus);
+		}
+		/*
+		 * Secondary action treatment (Requirement 5.3): the Upload button reads as
+		 * a lower-emphasis surface button so the primary download action stands out.
+		 * (The per-row Delete buttons use the .font-delete danger treatment above.)
+		 */
+		.upload-control input[type="submit"] {
+			flex: 0 0 auto;
+			padding: var(--space-3) var(--space-5);
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-sm);
+			background-color: var(--color-surface);
+			color: var(--color-text);
+			font-family: var(--font-sans);
+			font-size: var(--font-size-md);
+			cursor: pointer;
+			transition: background-color var(--transition-base),
+				border-color var(--transition-base);
+		}
+		.upload-control input[type="submit"]:hover {
+			background-color: var(--color-surface-raised);
+			border-color: var(--color-accent);
+		}
+		.upload-control input[type="submit"]:focus-visible {
+			outline: none;
+			border-color: var(--color-focus);
+			box-shadow: 0 0 0 2px var(--color-focus);
 		}
 	</style>
 </head>
 
 <body onload = 'setFont()'>
 
-	
-	&nbsp;<br>
+	<div class="app-shell">
 
-	<table>
-		<tr>
-			<td colspan=3>
-				<h2>truetype2gfx - Converting fonts from TrueType to Adafruit GFX</h2>
-				&nbsp;<br>
-				&nbsp;<br>
-			</td>
-		</tr>
+		<header class="app-header">
+			<h1 class="app-brand-name">truetype2gfx</h1>
+			<p class="app-brand-tagline">Convert TrueType fonts into Adafruit GFX header files</p>
+		</header>
 
-		<tr>
-			<td id="second">
-			
-				<form action="" method="post" enctype="multipart/form-data">
-			
+	<div class="workspace">
+
+		<form action="" method="post" enctype="multipart/form-data">
+
+			<div class="zone-library">
+
 				<h3>FreeFonts</h3>
-				<input type="radio" name="font" value="FreeSans.ttf" checked onChange="updateImage()">&nbsp;FreeSans<br>
-				<input type="radio" name="font" value="FreeSansBold.ttf" onChange="updateImage()">&nbsp;FreeSansBold<br>
-				<input type="radio" name="font" value="FreeSansBoldOblique.ttf" onChange="updateImage()">&nbsp;FreeSansBoldOblique<br>
-				<input type="radio" name="font" value="FreeSansOblique.ttf" onChange="updateImage()">&nbsp;FreeSansOblique<br>
-				<input type="radio" name="font" value="FreeSerif.ttf" onChange="updateImage()">&nbsp;FreeSerif<br>
-				<input type="radio" name="font" value="FreeSerifBold.ttf" onChange="updateImage()">&nbsp;FreeSerifBold<br>
-				<input type="radio" name="font" value="FreeSerifBoldItalic.ttf" onChange="updateImage()">&nbsp;FreeSerifBoldItalic<br>
-				<input type="radio" name="font" value="FreeSerifItalic.ttf" onChange="updateImage()">&nbsp;FreeSerifItalic<br>
-				<input type="radio" name="font" value="FreeMono.ttf" onChange="updateImage()">&nbsp;FreeMono<br>
-				<input type="radio" name="font" value="FreeMonoBold.ttf" onChange="updateImage()">&nbsp;FreeMonoBold<br>
-				<input type="radio" name="font" value="FreeMonoBoldOblique.ttf" onChange="updateImage()">&nbsp;FreeMonoBoldOblique<br>
-				<input type="radio" name="font" value="FreeMonoOblique.ttf" onChange="updateImage()">&nbsp;FreeMonoOblique<br>
+				<div class="font-list">
+					<label class="font-row"><input type="radio" name="font" value="FreeSans.ttf" checked onChange="updateImage()"><span class="font-name">FreeSans</span></label>
+					<label class="font-row"><input type="radio" name="font" value="FreeSansBold.ttf" onChange="updateImage()"><span class="font-name">FreeSansBold</span></label>
+					<label class="font-row"><input type="radio" name="font" value="FreeSansBoldOblique.ttf" onChange="updateImage()"><span class="font-name">FreeSansBoldOblique</span></label>
+					<label class="font-row"><input type="radio" name="font" value="FreeSansOblique.ttf" onChange="updateImage()"><span class="font-name">FreeSansOblique</span></label>
+					<label class="font-row"><input type="radio" name="font" value="FreeSerif.ttf" onChange="updateImage()"><span class="font-name">FreeSerif</span></label>
+					<label class="font-row"><input type="radio" name="font" value="FreeSerifBold.ttf" onChange="updateImage()"><span class="font-name">FreeSerifBold</span></label>
+					<label class="font-row"><input type="radio" name="font" value="FreeSerifBoldItalic.ttf" onChange="updateImage()"><span class="font-name">FreeSerifBoldItalic</span></label>
+					<label class="font-row"><input type="radio" name="font" value="FreeSerifItalic.ttf" onChange="updateImage()"><span class="font-name">FreeSerifItalic</span></label>
+					<label class="font-row"><input type="radio" name="font" value="FreeMono.ttf" onChange="updateImage()"><span class="font-name">FreeMono</span></label>
+					<label class="font-row"><input type="radio" name="font" value="FreeMonoBold.ttf" onChange="updateImage()"><span class="font-name">FreeMonoBold</span></label>
+					<label class="font-row"><input type="radio" name="font" value="FreeMonoBoldOblique.ttf" onChange="updateImage()"><span class="font-name">FreeMonoBoldOblique</span></label>
+					<label class="font-row"><input type="radio" name="font" value="FreeMonoOblique.ttf" onChange="updateImage()"><span class="font-name">FreeMonoOblique</span></label>
+				</div>
 				
 				<h3>Your fonts</h3>
 				<input type="hidden" name="font-to-delete" id="font-to-delete" value="">
+				<div class="font-list">
 				<?php
-					foreach ($user_fonts as $font) {
-						$font_label = str_replace(".TTF", "", str_replace(".ttf", "", $font));
-						echo "<input type=\"radio\" name=\"font\" value=\"user/$font\" onChange=\"updateImage()\"> $font_label ";
-						echo "<button type=\"submit\" name=\"delete-font\" value=\"1\" onClick=\"return deleteFont(" . htmlspecialchars(json_encode($font), ENT_QUOTES, 'UTF-8') . ");\">Delete</button><br>\n";
+					if (empty($user_fonts)) {
+						echo "<p class=\"font-empty-state\">No custom fonts yet &mdash; upload a .ttf to get started.</p>\n";
+					} else {
+						foreach ($user_fonts as $font) {
+							$font_label = str_replace(".TTF", "", str_replace(".ttf", "", $font));
+							echo "<div class=\"font-row font-row--user\">";
+							echo "<label class=\"font-row-select\"><input type=\"radio\" name=\"font\" value=\"user/$font\" onChange=\"updateImage()\"><span class=\"font-name\">" . htmlspecialchars($font_label, ENT_QUOTES, 'UTF-8') . "</span></label>";
+							echo "<button type=\"submit\" class=\"font-delete\" name=\"delete-font\" value=\"1\" onClick=\"return deleteFont(" . htmlspecialchars(json_encode($font), ENT_QUOTES, 'UTF-8') . ");\">Delete</button>";
+							echo "</div>\n";
+						}
 					}
 				?>
+				</div>
 				
 				&nbsp;<br>
 				
-				<input type="submit" value="Upload" name="submit-file" onClick="return validateUpload();"> <input type="file" name="fileToUpload" id="fileToUpload"> 
-
-				&nbsp;<br>
-				&nbsp;<br>
-
-				<input type="submit" id="get-font" value="Get GFX font file" name="get-font">
-			</td>
-			<td id="third">
+				<div class="upload-control">
+					<input type="submit" value="Upload TTF File" name="submit-file" onClick="return validateUpload();"> <input type="file" name="fileToUpload" id="fileToUpload">
+				</div>
+				<p id="upload-notice" class="upload-notice" hidden></p>
+			</div>
+			<div class="zone-controls">
 				<div class="controls-grid">
 
-					<div class="control-group">
+					<div class="control-group card-device">
 						<h3>Device</h3>
 						<div class="control-row">
+							<label class="control-label" for="device">Device</label>
 							<select name="device" id="device" onChange="updateDevice()">
 								<?php
 									foreach ($devices as $device_id => $device) {
@@ -498,48 +1023,12 @@ if (isset($_POST["submit-file"])) {
 							</select>
 						</div>
 						<div class="control-row">
+							<span class="control-label">Rotation</span>
 							<input type="button" id="rotate-button" value="Rotate <?php echo $selected_rotation; ?> deg" onClick="rotateDevice()">
 							<input type="hidden" id="rotation" value="<?php echo $selected_rotation; ?>">
 						</div>
-					</div>
-
-					<div class="control-group">
-						<h3>Image Size</h3>
 						<div class="control-row">
-							<select name="size-mode" id="size-mode" onChange="savePreviewSettings(true)">
-								<option value="half"<?php if ($selected_size_mode == "half") echo " selected"; ?>>Half (50%)</option>
-								<option value="full"<?php if ($selected_size_mode == "full") echo " selected"; ?>>Full (100%)</option>
-								<option value="physical"<?php if ($selected_size_mode == "physical") echo " selected"; ?><?php if ($selected_device != "m5stickcplus") echo " disabled"; ?>>Match physical size</option>
-							</select>
-						</div>
-						<div class="control-row">
-							<span class="control-label">Display</span>
-							<select name="display-scale" id="display-scale" onChange="savePreviewSettings(true)"<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "physical") echo " disabled"; ?>>
-								<?php
-									foreach ($display_scales as $display_id => $display) {
-										$selected = ($display_id == $selected_display_scale) ? " selected" : "";
-										$label = ($display_id == "custom") ? $display["name"] : $display["name"] . " (" . intval($display["scale"] * 100) . "%)";
-										echo "<option value=\"$display_id\"$selected>" . $label . "</option>\n";
-									}
-								?>
-							</select>
-						</div>
-						<div class="control-row">
-							<input type="text" name="custom-scale" id="custom-scale" value="<?php echo $selected_custom_scale; ?>" onChange="savePreviewSettings(true)"<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "physical" || $selected_display_scale != "custom") echo " disabled"; ?>> %
-						</div>
-					</div>
-
-					<div class="control-group">
-						<h3>Font Size</h3>
-						<div class="control-row">
-							<input type="text" name="size" id="sizefield" value="20" onInput="updateImage()"> points
-						</div>
-					</div>
-
-					<div class="control-group">
-						<h3>Colours</h3>
-						<div class="control-row">
-							<span class="control-label">Background</span>
+							<label class="control-label" for="background">Background</label>
 							<select name="background" id="background" onChange="updatePreviewSettings()">
 								<?php
 									foreach ($colors as $color_id => $color) {
@@ -550,7 +1039,7 @@ if (isset($_POST["submit-file"])) {
 							</select>
 						</div>
 						<div class="control-row">
-							<span class="control-label">Foreground</span>
+							<label class="control-label" for="foreground">Foreground</label>
 							<select name="foreground" id="foreground" onChange="updatePreviewSettings()">
 								<?php
 									foreach ($colors as $color_id => $color) {
@@ -562,60 +1051,103 @@ if (isset($_POST["submit-file"])) {
 						</div>
 					</div>
 
+					<div class="control-group card-size">
+						<h3>Image Size</h3>
+						<div class="control-row">
+							<label class="control-label" for="size-mode">Size mode</label>
+							<select name="size-mode" id="size-mode" onChange="savePreviewSettings(true)">
+								<option value="half"<?php if ($selected_size_mode == "half") echo " selected"; ?>>Half (50%)</option>
+								<option value="full"<?php if ($selected_size_mode == "full") echo " selected"; ?>>Full (100%)</option>
+								<option value="physical"<?php if ($selected_size_mode == "physical") echo " selected"; ?><?php if ($selected_device != "m5stickcplus") echo " disabled"; ?>>Match physical size</option>
+							</select>
+						</div>
+						<div class="control-row<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "physical") echo " is-disabled"; ?>">
+							<label class="control-label" for="display-scale">Display scale</label>
+							<select name="display-scale" id="display-scale" onChange="savePreviewSettings(true)"<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "physical") echo " disabled"; ?>>
+								<?php
+									foreach ($display_scales as $display_id => $display) {
+										$selected = ($display_id == $selected_display_scale) ? " selected" : "";
+										$label = ($display_id == "custom") ? $display["name"] : $display["name"] . " (" . intval($display["scale"] * 100) . "%)";
+										echo "<option value=\"$display_id\"$selected>" . $label . "</option>\n";
+									}
+								?>
+							</select>
+						</div>
+						<div class="control-row<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "physical" || $selected_display_scale != "custom") echo " is-disabled"; ?>">
+							<label class="control-label" for="custom-scale">Custom scale</label>
+							<input type="text" name="custom-scale" id="custom-scale" value="<?php echo $selected_custom_scale; ?>" onChange="savePreviewSettings(true)"<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "physical" || $selected_display_scale != "custom") echo " disabled"; ?>> %
+						</div>
+					</div>
+
 					<div class="control-group span-2">
 						<h3>Preview Text</h3>
 						<div class="control-row">
-							<textarea name="text" id="textfield" rows="8" onInput="updateImage()">Testing 123...</textarea>
+							<textarea name="text" id="textfield" rows="8" onInput="updateImage()"></textarea>
 						</div>
-						<div class="control-row">
-							<input type="checkbox" id="word-wrap" value="on" onChange="updatePreviewSettings()"<?php if ($selected_word_wrap == "on") echo " checked"; ?>> Word wrap
-						</div>
-						<div class="control-row">
-							<input type="button" id="pixelate-button" value="<?php echo ($selected_pixelate == "on") ? "Smooth preview" : "Pixelate preview"; ?>" onClick="togglePixelate()">
-							<input type="hidden" id="pixelate" value="<?php echo $selected_pixelate; ?>">
-						</div>
-						<div class="control-row">
-							<input type="checkbox" id="output-pixelate" value="on" onChange="updatePreviewSettings()"<?php if ($selected_output_pixelate == "on") echo " checked"; ?>> Pixel-lock output
-						</div>
-					</div>
-
-					<div class="control-group span-2">
-						<h3>Position</h3>
-						<div class="control-row">
-							<span class="control-label">Vertical</span>
-							<?php
-								foreach ($vertical_positions as $position_id => $position_name) {
-									$checked = ($position_id == $selected_vertical) ? " checked" : "";
-									echo "<input type=\"radio\" name=\"vertical\" value=\"$position_id\"$checked onChange=\"updatePreviewSettings()\"> $position_name &nbsp; ";
-								}
-							?>
-						</div>
-						<div class="control-row">
-							<span class="control-label">Horizontal</span>
-							<?php
-								foreach ($horizontal_positions as $position_id => $position_name) {
-									$checked = ($position_id == $selected_horizontal) ? " checked" : "";
-									echo "<input type=\"radio\" name=\"horizontal\" value=\"$position_id\"$checked onChange=\"updatePreviewSettings()\"> $position_name &nbsp; ";
-								}
-							?>
+						<div class="options-split">
+							<div class="options-col">
+								<div class="control-row">
+									<label class="control-label" for="sizefield">Font size (points)</label>
+									<input type="number" name="size" id="sizefield" value="20" min="3" max="200" step="1" onInput="updateImage()"> points
+								</div>
+								<div class="control-row">
+									<span class="control-label">Vertical</span>
+									<?php
+										foreach ($vertical_positions as $position_id => $position_name) {
+											$checked = ($position_id == $selected_vertical) ? " checked" : "";
+											echo "<label class=\"option-label\" for=\"vertical-$position_id\"><input type=\"radio\" id=\"vertical-$position_id\" name=\"vertical\" value=\"$position_id\"$checked onChange=\"updatePreviewSettings()\"> $position_name</label>";
+										}
+									?>
+								</div>
+								<div class="control-row">
+									<span class="control-label">Horizontal</span>
+									<?php
+										foreach ($horizontal_positions as $position_id => $position_name) {
+											$checked = ($position_id == $selected_horizontal) ? " checked" : "";
+											echo "<label class=\"option-label\" for=\"horizontal-$position_id\"><input type=\"radio\" id=\"horizontal-$position_id\" name=\"horizontal\" value=\"$position_id\"$checked onChange=\"updatePreviewSettings()\"> $position_name</label>";
+										}
+									?>
+								</div>
+							</div>
+							<div class="options-col">
+								<div class="control-row">
+									<label class="option-label" for="word-wrap"><input type="checkbox" id="word-wrap" value="on" onChange="updatePreviewSettings()"<?php if ($selected_word_wrap == "on") echo " checked"; ?>> Word wrap</label>
+								</div>
+								<div class="control-row">
+									<span class="control-label">Glyph rendering</span>
+									<input type="button" id="pixelate-button" value="<?php echo ($selected_pixelate == "on") ? "Smooth preview" : "Pixelate preview"; ?>" onClick="togglePixelate()">
+									<input type="hidden" id="pixelate" value="<?php echo $selected_pixelate; ?>">
+								</div>
+								<div class="control-row">
+									<input type="submit" id="get-font" value="Get GFX font file" name="get-font">
+								</div>
+							</div>
 						</div>
 					</div>
 
 				</div>
 
-				</form>
-				
-			</td>
-			<td id="first">
-				<div id="device-frame">
-					<img id="device-background" src="<?php echo $devices[$selected_device]["image"]; ?>">
-					<img id="image" src="image.php">
+			</div>
+
+			</form>
+
+			<div class="zone-preview">
+				<div class="preview-stage">
+					<div id="device-frame">
+						<img id="device-background" src="<?php echo $devices[$selected_device]["image"]; ?>">
+						<img id="image" src="image.php" onload="previewLoaded()" onerror="previewError()">
+						<div id="preview-loading" class="preview-loading" aria-hidden="true"><span class="preview-spinner"></span></div>
+						<div id="preview-placeholder" class="preview-placeholder" hidden>Preview unavailable</div>
+					</div>
+					<div class="preview-status" id="preview-status">
+						Size: <?php echo htmlspecialchars($selected_size_mode, ENT_QUOTES, 'UTF-8'); ?> &middot; Rotation: <?php echo htmlspecialchars($selected_rotation, ENT_QUOTES, 'UTF-8'); ?>&deg;
+					</div>
 				</div>
-			</td>
-		</tr>
-		
-		<tr>
-			<td colspan=3>
+			</div>
+
+		</div>
+
+		<div class="info-section">
 	
 &nbsp<br>	
 			
@@ -675,9 +1207,9 @@ void loop() {
 
 <p>This tool has a <a href="https://github.com/ropg/truetype2gfx">github repository</a> that has the (quick-hack-style) PHP/Javascript code behind all this. And if you have any questions, bug reports or suggestions, simply <a href="https://github.com/ropg/truetype2gfx/issues/new">open a new issue</a> there and I will see what I can do. </p>
 
-			</td>
-		</tr>
-	</table>
+			</div>
+
+	</div>
 	
 	
 	
@@ -685,11 +1217,31 @@ void loop() {
 	
 		function updateImage() {
 			saveFormState();
-			document.getElementById("image").src = "image.php?device=" + encodeURIComponent(device()) + "&font=" + encodeURIComponent(font()) + "&size=" + encodeURIComponent(document.getElementById("sizefield").value) + "&text=" + encodeURIComponent(previewText()) + "&background=" + encodeURIComponent(background()) + "&foreground=" + encodeURIComponent(foreground()) + "&vertical=" + encodeURIComponent(vertical()) + "&horizontal=" + encodeURIComponent(horizontal()) + "&word_wrap=" + encodeURIComponent(wordWrap()) + "&pixelate=" + encodeURIComponent(pixelate()) + "&output_pixelate=" + encodeURIComponent(outputPixelate()) + "&output_width=<?php echo $output_width; ?>&output_height=<?php echo $output_height; ?>&rotation=" + encodeURIComponent(rotation()) + "#" + new Date().getTime();
+			var loading = document.getElementById("preview-loading");
+			if (loading) loading.classList.add("is-loading");
+			document.getElementById("image").src = "image.php?device=" + encodeURIComponent(device()) + "&font=" + encodeURIComponent(font()) + "&size=" + encodeURIComponent(document.getElementById("sizefield").value) + "&text=" + encodeURIComponent(previewText()) + "&background=" + encodeURIComponent(background()) + "&foreground=" + encodeURIComponent(foreground()) + "&vertical=" + encodeURIComponent(vertical()) + "&horizontal=" + encodeURIComponent(horizontal()) + "&word_wrap=" + encodeURIComponent(wordWrap()) + "&pixelate=" + encodeURIComponent(pixelate()) + "&rotation=" + encodeURIComponent(rotation()) + "#" + new Date().getTime();
 		}
 
 		function previewText() {
 			return document.getElementById("textfield").value.replace(/\r\n/g, "\\n").replace(/\r/g, "\\n").replace(/\n/g, "\\n");
+		}
+
+		function previewLoaded() {
+			var loading = document.getElementById("preview-loading");
+			if (loading) loading.classList.remove("is-loading");
+			var placeholder = document.getElementById("preview-placeholder");
+			if (placeholder) placeholder.hidden = true;
+			var img = document.getElementById("image");
+			if (img) img.style.visibility = "visible";
+		}
+
+		function previewError() {
+			var loading = document.getElementById("preview-loading");
+			if (loading) loading.classList.remove("is-loading");
+			var placeholder = document.getElementById("preview-placeholder");
+			if (placeholder) placeholder.hidden = false;
+			var img = document.getElementById("image");
+			if (img) img.style.visibility = "hidden";
 		}
 
 		function updateDevice() {
@@ -722,7 +1274,7 @@ void loop() {
 					updateImage();
 				}
 			};
-			request.send("set-preview-settings=1&background=" + encodeURIComponent(background()) + "&foreground=" + encodeURIComponent(foreground()) + "&vertical=" + encodeURIComponent(vertical()) + "&horizontal=" + encodeURIComponent(horizontal()) + "&size_mode=" + encodeURIComponent(sizeMode()) + "&display_scale=" + encodeURIComponent(displayScale()) + "&custom_scale=" + encodeURIComponent(customScale()) + "&word_wrap=" + encodeURIComponent(wordWrap()) + "&pixelate=" + encodeURIComponent(pixelate()) + "&output_pixelate=" + encodeURIComponent(outputPixelate()) + "&rotation=" + encodeURIComponent(rotation()));
+			request.send("set-preview-settings=1&background=" + encodeURIComponent(background()) + "&foreground=" + encodeURIComponent(foreground()) + "&vertical=" + encodeURIComponent(vertical()) + "&horizontal=" + encodeURIComponent(horizontal()) + "&size_mode=" + encodeURIComponent(sizeMode()) + "&display_scale=" + encodeURIComponent(displayScale()) + "&custom_scale=" + encodeURIComponent(customScale()) + "&word_wrap=" + encodeURIComponent(wordWrap()) + "&pixelate=" + encodeURIComponent(pixelate()) + "&rotation=" + encodeURIComponent(rotation()));
 		}
 
 		function background() {
@@ -745,7 +1297,7 @@ void loop() {
 			var field = document.getElementById("custom-scale");
 			var value = parseInt(field.value, 10);
 			if (isNaN(value)) value = 100;
-			if (value > 400) value = 400;
+			if (value > 1000) value = 1000;
 			if (value < 50) value = 50;
 			field.value = value;
 			return value;
@@ -753,10 +1305,6 @@ void loop() {
 
 		function wordWrap() {
 			return document.getElementById("word-wrap").checked ? "on" : "off";
-		}
-
-		function outputPixelate() {
-			return document.getElementById("output-pixelate").checked ? "on" : "off";
 		}
 
 		function togglePixelate() {
@@ -856,10 +1404,15 @@ void loop() {
 		function validateUpload() {
   			var file = document.getElementById("fileToUpload").value;
 			var reg = /(.*?)\.(ttf|TTF)$/;
+			var notice = document.getElementById("upload-notice");
 			if(!file.match(reg)) {
-				alert("You can only upload a TrueType font (.ttf or .TTF extension)");
+				if (notice) {
+					notice.textContent = "You can only upload a TrueType font (.ttf or .TTF extension)";
+					notice.hidden = false;
+				}
 				return false;
 			}
+			if (notice) notice.hidden = true;
 		}
 		
 	</script>
