@@ -1,6 +1,9 @@
 <?php
 
 session_start();
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 
 if (isset($_GET['reset'])) unset($_SESSION['fonts']);
 
@@ -1441,9 +1444,15 @@ void loop() {
 			request.open("POST", "index.php", true);
 			request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 			request.onload = function() {
-				window.location.reload();
+				reloadPage();
 			};
 			request.send("set-device=1&device=" + encodeURIComponent(device()));
+		}
+
+		function reloadPage() {
+			var url = new URL(window.location.href);
+			url.searchParams.set("_reload", new Date().getTime());
+			window.location.replace(url.toString());
 		}
 
 		function device() {
@@ -1461,7 +1470,7 @@ void loop() {
 			request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 			request.onload = function() {
 				if (reload) {
-					window.location.reload();
+					reloadPage();
 				} else {
 					updateImage();
 				}
