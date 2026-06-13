@@ -83,7 +83,8 @@ if ($rotation === "90" || $rotation === "270") {
     $image_width = $devices[$device]["height"];
     $image_height = $devices[$device]["width"];
 }
-$im = imagecreatetruecolor($image_width, $image_height);
+$use_mono_text_preview = ($pixelate && $pattern === "");
+$im = $use_mono_text_preview ? imagecreate($image_width, $image_height) : imagecreatetruecolor($image_width, $image_height);
 
 $dpi = 141;
 if (isset($_GET["dpi"]) && is_numeric($_GET["dpi"]) && $_GET["dpi"] > 0 && $_GET["dpi"] <= 300) {
@@ -270,14 +271,6 @@ if ($pattern !== "") {
     exit();
 }
 
-$mask = null;
-if ($pixelate) {
-    $mask = imagecreatetruecolor(imagesx($im), imagesy($im));
-    $mask_background = imagecolorallocate($mask, 0, 0, 0);
-    imagefilledrectangle($mask, 0, 0, imagesx($mask) - 1, imagesy($mask) - 1, $mask_background);
-    $mask_foreground = imagecolorallocate($mask, 255, 255, 255);
-}
-
 $lines = explode("\n", $text);
 if ($word_wrap) {
     $wrapped_lines = array();
@@ -324,27 +317,14 @@ foreach ($line_metrics as $line_metric) {
         $x = (imagesx($im) / 2) - ($line_metric["width"] / 2) - ($bbox[0] / 2);
     }
     $baseline = $y - $bbox[5];
-    if ($pixelate) {
-        imagettftext($mask, $size, 0, $x, $baseline, $mask_foreground, $font_path, $line_metric["text"]);
+    if ($use_mono_text_preview) {
+        // Negative palette index disables antialiasing, matching the
+        // monochrome FreeType renderer used by the export tool more closely.
+        imagettftext($im, $size, 0, $x, $baseline, -$foreground, $font_path, $line_metric["text"]);
     } else {
         imagettftext($im, $size, 0, $x, $baseline, $foreground, $font_path, $line_metric["text"]);
     }
     $y += $line_metric["height"] + $line_gap;
-}
-
-if ($pixelate) {
-    for ($y = 0; $y < imagesy($mask); $y++) {
-        for ($x = 0; $x < imagesx($mask); $x++) {
-            $pixel = imagecolorat($mask, $x, $y);
-            $r = ($pixel >> 16) & 0xFF;
-            $g = ($pixel >> 8) & 0xFF;
-            $b = $pixel & 0xFF;
-            if (($r + $g + $b) >= 384) {
-                imagesetpixel($im, $x, $y, $foreground);
-            }
-        }
-    }
-    imagedestroy($mask);
 }
 
 // Using imagepng() results in clearer text compared with imagejpeg()
