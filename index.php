@@ -6,7 +6,7 @@ if (isset($_GET['reset'])) unset($_SESSION['fonts']);
 
 $devices = array(
 	"m5stack" => array(
-		"name" => "M5Stack",
+		"name" => "M5Stack Core",
 		"image" => "M5Stack-bg.png",
 		"width" => 320,
 		"height" => 240,
@@ -15,7 +15,11 @@ $devices = array(
 		"screen_left" => 50,
 		"screen_top" => 90,
 		"screen_width" => 320,
-		"screen_height" => 240
+		"screen_height" => 240,
+		"physical_width_mm" => 54.0,
+		"physical_height_mm" => 54.0,
+		"screen_physical_width_mm" => 40.6,
+		"screen_physical_height_mm" => 30.5
 	),
 	"m5stickcplus" => array(
 		"name" => "M5Stick-CPlus",
@@ -30,6 +34,22 @@ $devices = array(
 		"screen_height" => 460,
 		"physical_width_mm" => 24.0,
 		"physical_height_mm" => 48.0
+	),
+	"lilygot4s3amoled" => array(
+		"name" => "Lily Go T4-S3 Amoled",
+		"image" => "Lily Go T4 Amoled.png",
+		"width" => 400,
+		"height" => 650,
+		"frame_width" => 1199,
+		"frame_height" => 1496,
+		"screen_left" => 103,
+		"screen_top" => 102,
+		"screen_width" => 994,
+		"screen_height" => 1286,
+		"physical_width_mm" => 44.0,
+		"physical_height_mm" => 57.0,
+		"screen_physical_width_mm" => 36.2,
+		"screen_physical_height_mm" => 49.0
 	)
 );
 
@@ -137,7 +157,8 @@ $selected_foreground = $_SESSION["preview-settings"]["foreground"];
 $selected_vertical = $_SESSION["preview-settings"]["vertical"];
 $selected_horizontal = $_SESSION["preview-settings"]["horizontal"];
 $selected_size_mode = $_SESSION["preview-settings"]["size_mode"];
-if ($selected_device != "m5stickcplus" && $selected_size_mode == "physical") {
+$device_supports_physical_size = isset($devices[$selected_device]["physical_width_mm"]) && isset($devices[$selected_device]["physical_height_mm"]);
+if (!$device_supports_physical_size && $selected_size_mode == "physical") {
 	$selected_size_mode = "half";
 	$_SESSION["preview-settings"]["size_mode"] = $selected_size_mode;
 }
@@ -148,7 +169,7 @@ $selected_pixelate = $_SESSION["preview-settings"]["pixelate"];
 $selected_rotation = $_SESSION["preview-settings"]["rotation"];
 $physical_scale = $display_scales[$selected_display_scale]["scale"];
 if ($selected_display_scale == "custom") $physical_scale = $selected_custom_scale / 100;
-$use_physical_size = ($selected_device == "m5stickcplus" && $selected_size_mode == "physical");
+$use_physical_size = ($device_supports_physical_size && $selected_size_mode == "physical");
 $device_scale = ($selected_size_mode == "full") ? 1.0 : 0.5;
 $rotation = intval($selected_rotation);
 $frame_width_raw = $devices[$selected_device]["frame_width"];
@@ -201,14 +222,63 @@ $background_top = intval(($frame_height - $background_height) / 2);
 if ($use_physical_size) {
 	$physical_width = $devices[$selected_device]["physical_width_mm"] * $physical_scale;
 	$physical_height = $devices[$selected_device]["physical_height_mm"] * $physical_scale;
-	$scale_x = $physical_width / $frame_width_raw;
-	$scale_y = $physical_height / $frame_height_raw;
+	if (isset($devices[$selected_device]["screen_physical_width_mm"]) && isset($devices[$selected_device]["screen_physical_height_mm"])) {
+		$screen_physical_width = $devices[$selected_device]["screen_physical_width_mm"] * $physical_scale;
+		$screen_physical_height = $devices[$selected_device]["screen_physical_height_mm"] * $physical_scale;
+		$left_margin_raw = $screen_left_raw;
+		$right_margin_raw = $frame_width_raw - ($screen_left_raw + $screen_width_raw);
+		$top_margin_raw = $screen_top_raw;
+		$bottom_margin_raw = $frame_height_raw - ($screen_top_raw + $screen_height_raw);
+		$horizontal_margin_total = $physical_width - $screen_physical_width;
+		$vertical_margin_total = $physical_height - $screen_physical_height;
+
+		if (($left_margin_raw + $right_margin_raw) > 0) {
+			$screen_left_physical = $horizontal_margin_total * ($left_margin_raw / ($left_margin_raw + $right_margin_raw));
+		} else {
+			$screen_left_physical = $horizontal_margin_total / 2;
+		}
+		if (($top_margin_raw + $bottom_margin_raw) > 0) {
+			$screen_top_physical = $vertical_margin_total * ($top_margin_raw / ($top_margin_raw + $bottom_margin_raw));
+		} else {
+			$screen_top_physical = $vertical_margin_total / 2;
+		}
+
+		if ($rotation == 90) {
+			$rotated_screen_left_physical = $physical_height - ($screen_top_physical + $screen_physical_height);
+			$rotated_screen_top_physical = $screen_left_physical;
+			$rotated_screen_width_physical = $screen_physical_height;
+			$rotated_screen_height_physical = $screen_physical_width;
+		} elseif ($rotation == 180) {
+			$rotated_screen_left_physical = $physical_width - ($screen_left_physical + $screen_physical_width);
+			$rotated_screen_top_physical = $physical_height - ($screen_top_physical + $screen_physical_height);
+			$rotated_screen_width_physical = $screen_physical_width;
+			$rotated_screen_height_physical = $screen_physical_height;
+		} elseif ($rotation == 270) {
+			$rotated_screen_left_physical = $screen_top_physical;
+			$rotated_screen_top_physical = $physical_width - ($screen_left_physical + $screen_physical_width);
+			$rotated_screen_width_physical = $screen_physical_height;
+			$rotated_screen_height_physical = $screen_physical_width;
+		} else {
+			$rotated_screen_left_physical = $screen_left_physical;
+			$rotated_screen_top_physical = $screen_top_physical;
+			$rotated_screen_width_physical = $screen_physical_width;
+			$rotated_screen_height_physical = $screen_physical_height;
+		}
+
+		$screen_left = $rotated_screen_left_physical . "mm";
+		$screen_top = $rotated_screen_top_physical . "mm";
+		$screen_width = $rotated_screen_width_physical . "mm";
+		$screen_height = $rotated_screen_height_physical . "mm";
+	} else {
+		$scale_x = $physical_width / $frame_width_raw;
+		$scale_y = $physical_height / $frame_height_raw;
+		$screen_left = ($rotated_screen_left_raw * (($rotation == 90 || $rotation == 270) ? $scale_y : $scale_x)) . "mm";
+		$screen_top = ($rotated_screen_top_raw * (($rotation == 90 || $rotation == 270) ? $scale_x : $scale_y)) . "mm";
+		$screen_width = ($rotated_screen_width_raw * (($rotation == 90 || $rotation == 270) ? $scale_y : $scale_x)) . "mm";
+		$screen_height = ($rotated_screen_height_raw * (($rotation == 90 || $rotation == 270) ? $scale_x : $scale_y)) . "mm";
+	}
 	$frame_width = ($rotation == 90 || $rotation == 270) ? $physical_height . "mm" : $physical_width . "mm";
 	$frame_height = ($rotation == 90 || $rotation == 270) ? $physical_width . "mm" : $physical_height . "mm";
-	$screen_left = ($rotated_screen_left_raw * (($rotation == 90 || $rotation == 270) ? $scale_y : $scale_x)) . "mm";
-	$screen_top = ($rotated_screen_top_raw * (($rotation == 90 || $rotation == 270) ? $scale_x : $scale_y)) . "mm";
-	$screen_width = ($rotated_screen_width_raw * (($rotation == 90 || $rotation == 270) ? $scale_y : $scale_x)) . "mm";
-	$screen_height = ($rotated_screen_height_raw * (($rotation == 90 || $rotation == 270) ? $scale_x : $scale_y)) . "mm";
 	$background_width = $physical_width . "mm";
 	$background_height = $physical_height . "mm";
 	$background_left = "calc((" . $frame_width . " - " . $background_width . ") / 2)";
@@ -629,6 +699,17 @@ if (isset($_POST["submit-file"])) {
 			transform-origin: center center;
 			z-index: 1;
 		}
+		/* Fill slightly beyond the active area so browser subpixel tolerances
+		 * do not let the source PNG's white screen show at some scalings. */
+		#screen-fill {
+			position: absolute;
+			left: calc(<?php echo $screen_left; ?> - 1px);
+			top: calc(<?php echo $screen_top; ?> - 1px);
+			width: calc(<?php echo $screen_width; ?> + 2px);
+			height: calc(<?php echo $screen_height; ?> + 2px);
+			background-color: <?php echo htmlspecialchars($selected_background, ENT_QUOTES, 'UTF-8'); ?>;
+			z-index: 2;
+		}
 		#image {
 			position: absolute;
 			left: <?php echo $screen_left; ?>;
@@ -636,7 +717,7 @@ if (isset($_POST["submit-file"])) {
 			width: <?php echo $screen_width; ?>;
 			height: <?php echo $screen_height; ?>;
 			image-rendering: <?php echo ($selected_pixelate == "on") ? "pixelated" : "auto"; ?>;
-			z-index: 2;
+			z-index: 3;
 		}
 		/* Preview Stage: framed, elevated, left-aligned (design.md "Live Preview Stage") */
 		.preview-stage {
@@ -662,7 +743,7 @@ if (isset($_POST["submit-file"])) {
 		.preview-loading {
 			position: absolute;
 			inset: 0;
-			z-index: 3;
+			z-index: 4;
 			display: flex;
 			align-items: center;
 			justify-content: center;
@@ -688,7 +769,7 @@ if (isset($_POST["submit-file"])) {
 		.preview-placeholder {
 			position: absolute;
 			inset: 0;
-			z-index: 4;
+			z-index: 5;
 			display: flex;
 			align-items: center;
 			justify-content: center;
@@ -838,14 +919,11 @@ if (isset($_POST["submit-file"])) {
 			cursor: pointer;
 		}
 		/*
-		 * Disabled styling for the Calibration_Controls (Requirement 7.5).
+		 * Disabled styling for the calibration controls.
 		 * The size-mode "physical" option, the display-scale select and the
 		 * custom-scale input carry a server-rendered `disabled` attribute unless
-		 * the device is M5StickC-Plus and the size mode is physical (and, for
-		 * custom-scale, the display scale is custom). :disabled selectors give a
-		 * clear muted, reduced-opacity, not-allowed look so the controls read as
-		 * unavailable; the matching label is muted via the PHP-driven .is-disabled
-		 * class on its control-row.
+		 * the selected device has physical dimensions and the size mode is
+		 * physical (and, for custom-scale, the display scale is custom).
 		 */
 		.zone-controls select:disabled,
 		.zone-controls input:disabled,
@@ -1084,12 +1162,12 @@ if (isset($_POST["submit-file"])) {
 							<select name="size-mode" id="size-mode" onChange="savePreviewSettings(true)">
 								<option value="half"<?php if ($selected_size_mode == "half") echo " selected"; ?>>Half (50%)</option>
 								<option value="full"<?php if ($selected_size_mode == "full") echo " selected"; ?>>Full (100%)</option>
-								<option value="physical"<?php if ($selected_size_mode == "physical") echo " selected"; ?><?php if ($selected_device != "m5stickcplus") echo " disabled"; ?>>Match physical size</option>
+								<option value="physical"<?php if ($selected_size_mode == "physical") echo " selected"; ?><?php if (!$device_supports_physical_size) echo " disabled"; ?>>Match physical size</option>
 							</select>
 						</div>
-						<div class="control-row<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "physical") echo " is-disabled"; ?>">
+						<div class="control-row<?php if (!$device_supports_physical_size || $selected_size_mode != "physical") echo " is-disabled"; ?>">
 							<label class="control-label" for="display-scale">Display scale</label>
-							<select name="display-scale" id="display-scale" onChange="savePreviewSettings(true)"<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "physical") echo " disabled"; ?>>
+							<select name="display-scale" id="display-scale" onChange="savePreviewSettings(true)"<?php if (!$device_supports_physical_size || $selected_size_mode != "physical") echo " disabled"; ?>>
 								<?php
 									foreach ($display_scales as $display_id => $display) {
 										$selected = ($display_id == $selected_display_scale) ? " selected" : "";
@@ -1099,9 +1177,9 @@ if (isset($_POST["submit-file"])) {
 								?>
 							</select>
 						</div>
-						<div class="control-row<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "physical" || $selected_display_scale != "custom") echo " is-disabled"; ?>">
+						<div class="control-row<?php if (!$device_supports_physical_size || $selected_size_mode != "physical" || $selected_display_scale != "custom") echo " is-disabled"; ?>">
 							<label class="control-label" for="custom-scale">Custom scale</label>
-							<input type="text" name="custom-scale" id="custom-scale" value="<?php echo $selected_custom_scale; ?>" onChange="savePreviewSettings(true)"<?php if ($selected_device != "m5stickcplus" || $selected_size_mode != "physical" || $selected_display_scale != "custom") echo " disabled"; ?>> %
+							<input type="text" name="custom-scale" id="custom-scale" value="<?php echo $selected_custom_scale; ?>" onChange="savePreviewSettings(true)"<?php if (!$device_supports_physical_size || $selected_size_mode != "physical" || $selected_display_scale != "custom") echo " disabled"; ?>> %
 						</div>
 					</div>
 
@@ -1169,6 +1247,7 @@ if (isset($_POST["submit-file"])) {
 				<div class="preview-stage">
 					<div id="device-frame">
 						<img id="device-background" src="<?php echo $devices[$selected_device]["image"]; ?>">
+						<div id="screen-fill" aria-hidden="true"></div>
 						<img id="image" src="image.php" onload="previewLoaded()" onerror="previewError()">
 						<div id="preview-loading" class="preview-loading" aria-hidden="true"><span class="preview-spinner"></span></div>
 						<div id="preview-placeholder" class="preview-placeholder" hidden>Preview unavailable</div>
@@ -1250,10 +1329,16 @@ void loop() {
 	<script>		
 	
 		function updateImage() {
+			syncScreenFill();
 			saveFormState();
 			var loading = document.getElementById("preview-loading");
 			if (loading) loading.classList.add("is-loading");
 			document.getElementById("image").src = "image.php?device=" + encodeURIComponent(device()) + "&font=" + encodeURIComponent(font()) + "&size=" + encodeURIComponent(document.getElementById("sizefield").value) + "&text=" + encodeURIComponent(previewText()) + "&background=" + encodeURIComponent(background()) + "&foreground=" + encodeURIComponent(foreground()) + "&vertical=" + encodeURIComponent(vertical()) + "&horizontal=" + encodeURIComponent(horizontal()) + "&word_wrap=" + encodeURIComponent(wordWrap()) + "&pixelate=" + encodeURIComponent(pixelate()) + "&rotation=" + encodeURIComponent(rotation()) + "#" + new Date().getTime();
+		}
+
+		function syncScreenFill() {
+			var fill = document.getElementById("screen-fill");
+			if (fill) fill.style.backgroundColor = background();
 		}
 
 		function previewText() {
@@ -1281,6 +1366,7 @@ void loop() {
 		// Pattern tests: while a button is held, show a cross-hatch or grid
 		// test pattern on the device display; restore the normal preview on release.
 		function showPattern(pattern) {
+			syncScreenFill();
 			document.getElementById("image").src = "image.php?device=" + encodeURIComponent(device()) + "&background=" + encodeURIComponent(background()) + "&foreground=" + encodeURIComponent(foreground()) + "&pixelate=" + encodeURIComponent(pixelate()) + "&rotation=" + encodeURIComponent(rotation()) + "&pattern=" + encodeURIComponent(pattern) + "#" + new Date().getTime();
 		}
 

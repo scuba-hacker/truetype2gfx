@@ -8,7 +8,8 @@ header('Cache-Control: no-cache, must-revalidate');
 
 $devices = array(
     "m5stack" => array("width" => 320, "height" => 240),
-    "m5stickcplus" => array("width" => 135, "height" => 240)
+    "m5stickcplus" => array("width" => 135, "height" => 240),
+    "lilygot4s3amoled" => array("width" => 400, "height" => 650)
 );
 
 $colors = array(
