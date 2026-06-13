@@ -4,6 +4,11 @@ session_start();
 
 if (isset($_GET['reset'])) unset($_SESSION['fonts']);
 
+function format_mm($value) {
+	$formatted = number_format($value, 1, '.', '');
+	return rtrim(rtrim($formatted, '0'), '.');
+}
+
 $devices = array(
 	"m5stack" => array(
 		"name" => "M5Stack Core",
@@ -294,6 +299,18 @@ if ($use_physical_size) {
 	$background_height .= "px";
 	$background_left .= "px";
 	$background_top .= "px";
+}
+
+$preview_device_dimensions = "";
+$preview_display_dimensions = "";
+$preview_resolution = (($rotation == 90 || $rotation == 270) ? $devices[$selected_device]["height"] . " x " . $devices[$selected_device]["width"] : $devices[$selected_device]["width"] . " x " . $devices[$selected_device]["height"]) . " px";
+if ($use_physical_size) {
+	$preview_device_dimensions = format_mm($devices[$selected_device]["physical_width_mm"]) . " x " . format_mm($devices[$selected_device]["physical_height_mm"]) . " mm";
+	if (isset($devices[$selected_device]["screen_physical_width_mm"]) && isset($devices[$selected_device]["screen_physical_height_mm"])) {
+		$preview_display_dimensions = format_mm($devices[$selected_device]["screen_physical_width_mm"]) . " x " . format_mm($devices[$selected_device]["screen_physical_height_mm"]) . " mm";
+	} else {
+		$preview_display_dimensions = "not configured";
+	}
 }
 
 if (isset($_POST["get-font"])) {
@@ -738,6 +755,15 @@ if (isset($_POST["submit-file"])) {
 			border: 1px solid var(--color-border);
 			border-radius: var(--radius-sm);
 			background-color: var(--color-surface-raised);
+		}
+		.preview-status-stack {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: var(--space-2);
+		}
+		.preview-status-meta {
+			font-size: var(--font-size-sm);
 		}
 		/* Compositor-friendly loading affordance (opacity/transform only) */
 		.preview-loading {
@@ -1252,8 +1278,18 @@ if (isset($_POST["submit-file"])) {
 						<div id="preview-loading" class="preview-loading" aria-hidden="true"><span class="preview-spinner"></span></div>
 						<div id="preview-placeholder" class="preview-placeholder" hidden>Preview unavailable</div>
 					</div>
-					<div class="preview-status" id="preview-status">
-						Size: <?php echo htmlspecialchars($selected_size_mode, ENT_QUOTES, 'UTF-8'); ?> &middot; Rotation: <?php echo htmlspecialchars($selected_rotation, ENT_QUOTES, 'UTF-8'); ?>&deg;
+						<div class="preview-status-stack">
+							<div class="preview-status" id="preview-status">
+								Size: <?php echo htmlspecialchars($selected_size_mode, ENT_QUOTES, 'UTF-8'); ?> &middot; Rotation: <?php echo htmlspecialchars($selected_rotation, ENT_QUOTES, 'UTF-8'); ?>&deg;
+							</div>
+							<div class="preview-status preview-status-meta" id="preview-resolution">
+								Resolution: <?php echo htmlspecialchars($preview_resolution, ENT_QUOTES, 'UTF-8'); ?>
+							</div>
+							<?php if ($use_physical_size) { ?>
+							<div class="preview-status preview-status-meta" id="preview-dimensions">
+								Device: <?php echo htmlspecialchars($preview_device_dimensions, ENT_QUOTES, 'UTF-8'); ?> &middot; Display: <?php echo htmlspecialchars($preview_display_dimensions, ENT_QUOTES, 'UTF-8'); ?>
+							</div>
+						<?php } ?>
 					</div>
 				</div>
 			</div>
