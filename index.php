@@ -339,7 +339,6 @@ if (isset($_POST["submit-file"])) {
 			/* Typography */
 			--font-sans: "Segoe UI", Roboto, Helvetica, Arial, system-ui, sans-serif;
 			--font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-			--font-size-xs: 0.75rem;
 			--font-size-sm: 0.875rem;
 			--font-size-md: 1rem;
 			--font-size-lg: 1.25rem;
@@ -376,8 +375,8 @@ if (isset($_POST["submit-file"])) {
 		}
 		/*
 		 * App Shell (see design.md "Component: App Shell").
-		 * Root container that centres page content within a max width and applies
-		 * page padding that scales with the viewport across breakpoints.
+		 * Root container that centres page content within a max width with
+		 * fixed page padding (desktop-only layout).
 		 */
 		.app-shell {
 			max-width: 1600px;
@@ -407,7 +406,7 @@ if (isset($_POST["submit-file"])) {
 		}
 		/*
 		 * Fixed desktop layout. Three zones in a single row: Font Library (left,
-		 * fixed width), Controls (centre, flexible), Live Preview (right, sized to
+		 * fixed width), Controls (centre, sized to content), Live Preview (right,
 		 * the device's natural width). Flexbox never overlaps items, so the
 		 * preview can never paint over the controls. No responsive breakpoints.
 		 */
@@ -618,6 +617,7 @@ if (isset($_POST["submit-file"])) {
 			width: <?php echo $frame_width; ?>;
 			height: <?php echo $frame_height; ?>;
 			overflow: hidden;
+			background-color: var(--color-bg);
 		}
 		#device-background {
 			position: absolute;
@@ -638,7 +638,7 @@ if (isset($_POST["submit-file"])) {
 			image-rendering: <?php echo ($selected_pixelate == "on") ? "pixelated" : "auto"; ?>;
 			z-index: 2;
 		}
-		/* Preview Stage: framed, elevated, right-anchored (design.md "Live Preview Stage") */
+		/* Preview Stage: framed, elevated, left-aligned (design.md "Live Preview Stage") */
 		.preview-stage {
 			display: flex;
 			flex-direction: column;
@@ -649,9 +649,6 @@ if (isset($_POST["submit-file"])) {
 			border: 1px solid var(--color-border);
 			border-radius: var(--radius);
 			box-shadow: var(--shadow);
-		}
-		#device-frame {
-			background-color: var(--color-bg);
 		}
 		.preview-status {
 			font-size: var(--font-size-sm);
@@ -711,8 +708,8 @@ if (isset($_POST["submit-file"])) {
 		}
 		/*
 		 * Controls Panel (see design.md "Component: Controls Panel").
-		 * The settings are grouped into themed cards laid out on a responsive grid.
-		 * All spacing/colour/shape values derive from theme tokens.
+		 * The settings are grouped into themed cards laid out on a fixed two-column
+		 * grid. All spacing/colour/shape values derive from theme tokens.
 		 */
 		.controls-grid {
 			display: grid;
@@ -721,8 +718,6 @@ if (isset($_POST["submit-file"])) {
 			align-items: stretch;
 			width: max-content;
 		}
-		.card-device { grid-column: span 1; }
-		.card-size { grid-column: span 1; }
 		/*
 		 * Each setting group is a themed, bordered, rounded surface with a clear
 		 * heading and consistent internal spacing.
@@ -871,6 +866,37 @@ if (isset($_POST["submit-file"])) {
 			width: 100%;
 			height: 8em;
 			box-sizing: border-box;
+			resize: none;
+		}
+		/* Pattern Tests: small square push buttons (cross-hatch / grid) */
+		.pattern-tests {
+			display: flex;
+			gap: var(--space-2);
+		}
+		.pattern-button {
+			width: 28px;
+			height: 28px;
+			padding: 0;
+			border: 1px solid var(--color-border);
+			border-radius: var(--radius-sm);
+			background-color: var(--color-surface-raised);
+			color: var(--color-text);
+			font-size: var(--font-size-md);
+			line-height: 1;
+			cursor: pointer;
+			transition: background-color var(--transition-fast), border-color var(--transition-fast);
+		}
+		.pattern-button:hover {
+			border-color: var(--color-accent);
+		}
+		.pattern-button:active {
+			background-color: var(--color-accent);
+			color: var(--color-accent-text);
+		}
+		.pattern-button:focus-visible {
+			outline: none;
+			border-color: var(--color-focus);
+			box-shadow: 0 0 0 2px var(--color-focus);
 		}
 		#background, #foreground, #device, #size-mode, #display-scale {
 			min-width: 140px;
@@ -1009,7 +1035,7 @@ if (isset($_POST["submit-file"])) {
 			<div class="zone-controls">
 				<div class="controls-grid">
 
-					<div class="control-group card-device">
+					<div class="control-group">
 						<h3>Device</h3>
 						<div class="control-row">
 							<label class="control-label" for="device">Device</label>
@@ -1051,7 +1077,7 @@ if (isset($_POST["submit-file"])) {
 						</div>
 					</div>
 
-					<div class="control-group card-size">
+					<div class="control-group">
 						<h3>Image Size</h3>
 						<div class="control-row">
 							<label class="control-label" for="size-mode">Size mode</label>
@@ -1117,6 +1143,14 @@ if (isset($_POST["submit-file"])) {
 									<span class="control-label">Glyph rendering</span>
 									<input type="button" id="pixelate-button" value="<?php echo ($selected_pixelate == "on") ? "Smooth preview" : "Pixelate preview"; ?>" onClick="togglePixelate()">
 									<input type="hidden" id="pixelate" value="<?php echo $selected_pixelate; ?>">
+								</div>
+								<div class="control-row">
+									<span class="control-label">Pattern Tests</span>
+									<span class="pattern-tests">
+										<button type="button" class="pattern-button" title="Cross-hatch pattern" onMouseDown="showPattern('cross')" onMouseUp="clearPattern()" onMouseLeave="clearPattern()" onTouchStart="showPattern('cross'); return false;" onTouchEnd="clearPattern()">&times;</button>
+										<button type="button" class="pattern-button" title="Grid pattern" onMouseDown="showPattern('grid')" onMouseUp="clearPattern()" onMouseLeave="clearPattern()" onTouchStart="showPattern('grid'); return false;" onTouchEnd="clearPattern()">+</button>
+										<button type="button" class="pattern-button" title="Moire animation" onClick="playMoire()">&lowast;</button>
+									</span>
 								</div>
 								<div class="control-row">
 									<input type="submit" id="get-font" value="Get GFX font file" name="get-font">
@@ -1242,6 +1276,42 @@ void loop() {
 			if (placeholder) placeholder.hidden = false;
 			var img = document.getElementById("image");
 			if (img) img.style.visibility = "hidden";
+		}
+
+		// Pattern tests: while a button is held, show a cross-hatch or grid
+		// test pattern on the device display; restore the normal preview on release.
+		function showPattern(pattern) {
+			document.getElementById("image").src = "image.php?device=" + encodeURIComponent(device()) + "&background=" + encodeURIComponent(background()) + "&foreground=" + encodeURIComponent(foreground()) + "&pixelate=" + encodeURIComponent(pixelate()) + "&rotation=" + encodeURIComponent(rotation()) + "&pattern=" + encodeURIComponent(pattern) + "#" + new Date().getTime();
+		}
+
+		function clearPattern() {
+			updateImage();
+		}
+
+		// ZX-Spectrum-style XOR moire: build the pattern line-by-line over 5s,
+		// hold for 5s, then restore the normal preview. Single click; auto-completes.
+		var moirePlaying = false;
+		function playMoire() {
+			if (moirePlaying) return;
+			moirePlaying = true;
+			var img = document.getElementById("image");
+			var total = 100;
+			var buildMs = 5000;
+			var step = 0;
+			var base = "image.php?device=" + encodeURIComponent(device()) + "&background=" + encodeURIComponent(background()) + "&foreground=" + encodeURIComponent(foreground()) + "&pixelate=" + encodeURIComponent(pixelate()) + "&rotation=" + encodeURIComponent(rotation()) + "&pattern=moire";
+			function drawNext() {
+				step++;
+				img.src = base + "&lines=" + step + "#" + new Date().getTime();
+				if (step < total) {
+					setTimeout(drawNext, buildMs / total);
+				} else {
+					setTimeout(function() {
+						moirePlaying = false;
+						clearPattern();
+					}, 5000);
+				}
+			}
+			drawNext();
 		}
 
 		function updateDevice() {

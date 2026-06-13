@@ -60,6 +60,16 @@ if (isset($_GET["pixelate"]) && $_GET["pixelate"] === "on") {
     $pixelate = true;
 }
 
+$pattern = "";
+if (isset($_GET["pattern"]) && in_array($_GET["pattern"], array("cross", "grid", "moire"))) {
+    $pattern = $_GET["pattern"];
+}
+
+$pattern_lines = 0;
+if (isset($_GET["lines"]) && is_numeric($_GET["lines"])) {
+    $pattern_lines = max(0, min(100, intval($_GET["lines"])));
+}
+
 $rotation = "0";
 if (isset($_GET["rotation"]) && in_array($_GET["rotation"], array("0", "90", "180", "270"))) {
     $rotation = $_GET["rotation"];
@@ -197,6 +207,67 @@ $fg_rgb = $colors[$foreground_color];
 $background = imagecolorallocate($im, $bg_rgb[0], $bg_rgb[1], $bg_rgb[2]);
 $foreground = imagecolorallocate($im, $fg_rgb[0], $fg_rgb[1], $fg_rgb[2]);
 imagefilledrectangle($im, 0, 0, imagesx($im) - 1, imagesy($im) - 1, $background);
+
+// Pattern tests: 1px-wide foreground lines with a 1px gap between them.
+// "cross" = checkerboard, "grid" = horizontal + vertical grid,
+// "moire" = ZX-Spectrum-style XOR (OVER 1) interference pattern, drawn
+// progressively (the frontend requests an increasing "lines" count).
+if ($pattern !== "") {
+    $w = imagesx($im);
+    $h = imagesy($im);
+    if ($pattern === "grid") {
+        for ($x = 0; $x < $w; $x += 2) imageline($im, $x, 0, $x, $h - 1, $foreground);
+        for ($y = 0; $y < $h; $y += 2) imageline($im, 0, $y, $w - 1, $y, $foreground);
+    } else if ($pattern === "moire") {
+        // Classic ZX-Spectrum XOR (OVER 1) moire. Lines are full diagonals whose
+        // two endpoints sweep along opposite edges in opposite directions,
+        // pivoting to form an X. First half: left endpoint moves down the left
+        // edge while the right endpoint moves up the right edge (start with the
+        // main diagonal 0,0 -> maxX,maxY). Second half: top endpoint moves right
+        // along the top edge while the bottom endpoint moves left along the
+        // bottom edge. "lines" is a 0..100 progress percentage so the frontend
+        // can animate the screen building up.
+        $segments = array();
+        for ($y = 0; $y < $h; $y++) $segments[] = array(0, $y, $w - 1, $h - 1 - $y);       // first half
+        for ($x = 0; $x < $w; $x++) $segments[] = array($x, 0, $w - 1 - $x, $h - 1);        // second half
+        $total = count($segments);
+        $draw = intval(($pattern_lines / 100) * $total);
+        if ($draw > $total) $draw = $total;
+        // Toggle a pixel between foreground/background (XOR / "OVER 1").
+        $xor_pixel = function ($x, $y) use ($im, $foreground, $background, $fg_rgb, $w, $h) {
+            if ($x < 0 || $y < 0 || $x >= $w || $y >= $h) return;
+            $cur = imagecolorat($im, $x, $y);
+            $r = ($cur >> 16) & 0xFF; $g = ($cur >> 8) & 0xFF; $b = $cur & 0xFF;
+            $is_fg = ($r === $fg_rgb[0] && $g === $fg_rgb[1] && $b === $fg_rgb[2]);
+            imagesetpixel($im, $x, $y, $is_fg ? $background : $foreground);
+        };
+        // Bresenham line with XOR plotting.
+        $xor_line = function ($x0, $y0, $x1, $y1) use ($xor_pixel) {
+            $dx = abs($x1 - $x0); $dy = -abs($y1 - $y0);
+            $sx = $x0 < $x1 ? 1 : -1; $sy = $y0 < $y1 ? 1 : -1;
+            $err = $dx + $dy;
+            while (true) {
+                $xor_pixel($x0, $y0);
+                if ($x0 === $x1 && $y0 === $y1) break;
+                $e2 = 2 * $err;
+                if ($e2 >= $dy) { $err += $dy; $x0 += $sx; }
+                if ($e2 <= $dx) { $err += $dx; $y0 += $sy; }
+            }
+        };
+        for ($i = 0; $i < $draw; $i++) {
+            $xor_line($segments[$i][0], $segments[$i][1], $segments[$i][2], $segments[$i][3]);
+        }
+    } else { // checkerboard: alternating single foreground/background pixels
+        for ($y = 0; $y < $h; $y++) {
+            for ($x = 0; $x < $w; $x++) {
+                if ((($x + $y) & 1) === 0) imagesetpixel($im, $x, $y, $foreground);
+            }
+        }
+    }
+    imagepng($im);
+    imagedestroy($im);
+    exit();
+}
 
 $mask = null;
 if ($pixelate) {
