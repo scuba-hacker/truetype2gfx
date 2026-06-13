@@ -46,8 +46,8 @@ $devices = array(
 	"lilygot4s3amoled" => array(
 		"name" => "Lily Go T4-S3 Amoled",
 		"image" => "Lily Go T4 Amoled.png",
-		"width" => 400,
-		"height" => 650,
+		"width" => 450,
+		"height" => 600,
 		"frame_width" => 1199,
 		"frame_height" => 1496,
 		"screen_left" => 103,
@@ -736,6 +736,9 @@ if (isset($_POST["submit-file"])) {
 			top: <?php echo $screen_top; ?>;
 			width: <?php echo $screen_width; ?>;
 			height: <?php echo $screen_height; ?>;
+			display: block;
+			object-fit: contain;
+			object-position: center center;
 			image-rendering: <?php echo ($selected_pixelate == "on") ? "pixelated" : "auto"; ?>;
 			z-index: 3;
 		}
@@ -1009,7 +1012,7 @@ if (isset($_POST["submit-file"])) {
 			min-width: 140px;
 		}
 		#sizefield {
-			width: 4em;
+			width: 4.6em;
 			text-align: center;
 		}
 		#custom-scale {
