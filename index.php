@@ -687,7 +687,7 @@ if (isset($_POST["submit-file"])) {
 			width: <?php echo $frame_width; ?>;
 			height: <?php echo $frame_height; ?>;
 			overflow: hidden;
-			background-color: var(--color-bg);
+			background-color: transparent;
 		}
 		#device-background {
 			position: absolute;
